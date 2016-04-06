@@ -1,0 +1,813 @@
+#!/bin/sh
+#
+# $Id: maindriver,v 1.16 1997/06/27 00:36:21 abrown Exp $
+#
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+# 
+
+# Main driver script for HBench-OS
+#
+# Usage: maindriver <run_file>
+
+PATH=.:$PATH:/etc:/usr/etc:/sbin:/usr/sbin
+export PATH
+
+if [ X${RSH}X = XX ]; then
+    RSH=rsh
+fi
+
+if [ X${RCP}X = XX ]; then
+    RCP=rcp
+fi
+
+# Step 0: Figure out echo.
+if [ `echo -n "foo" | wc -l` -eq 0 ]; then
+    ECHON="-n"; ECHOC=
+else
+    ECHON= ; ECHOC='\c'
+fi
+
+
+# Step 1: Discover hbench root path
+HBENCHROOT=`(cd \`dirname $0\`/.. ; pwd)`
+
+# Step 2: Get run file name, check arguments, etc
+if [ $# -lt 1 ]; then
+    echo "Usage: `basename $0` <run_file>"
+    exit 1
+fi
+if [ ! -f $1 ]; then
+    echo Unable to open run file $1.
+    exit 1
+fi
+
+# Step 2.5: print startup header.
+echo Benchmark run began at `date`
+echo ""
+
+# Step 3: read in run file
+echo "Using run file: $1"
+. $1
+
+# Step 4: Set up state variables, if not already set by run file
+if [ X${CYCLECOUNTER}X = XX ]; then
+    CYCLECOUNTER=NO
+fi
+if [ X${EVENTCOUNTER1}X = XX ]; then
+    EVENTCOUNTER1=""
+fi
+if [ X${EVENTCOUNTER2}X = XX ]; then
+    EVENTCOUNTER2=""
+fi
+if [ X${NRUNS}X = XX ]; then
+    NRUNS=1
+fi
+if [ X${RAWDISK} = XX ]; then
+    RAWDISK=/dev/sd0a
+fi
+if [ X${SCRATCHFILE}X = XX ]; then
+    SCRATCHFILE=/tmp/XXX
+    touch $SCRATCHFILE || echo Cannot create temporary file $SCRATCHFILE
+fi 
+if [ X${SCRATCHDIR}X = XX ]; then
+    SCRATCHDIR=/tmp
+fi 
+  
+if [ X${PLAINBINDIR}X = XX ]; then
+    PLAINBINDIR=${HBENCHROOT}/bin/${OSTYPE}-${ARCH}
+fi
+if [ X${CYCLECOUNTERBINDIR}X = XX ]; then
+    CYCLECOUNTERBINDIR=${HBENCHROOT}/bin/${OSTYPE}-${ARCH}-c
+fi
+if [ X${EVENTCOUNTERBINDIR}X = XX ]; then
+    EVENTCOUNTERBINDIR=${HBENCHROOT}/bin/${OSTYPE}-${ARCH}-ec
+fi
+if [ X${RESULTDIRBASE}X = XX ]; then
+    RESULTDIRBASE=${HBENCHROOT}/Results/${OSTYPE}-${ARCH}
+fi
+
+RESULTDIRB=${RESULTDIRBASE}/${SYSTEMNAME}
+
+# Step 5: Locate test file, using "default.test" if none specified.
+#         First try it unmodified, then add .test, then check in 
+#         ${HBENCHROOT}/conf
+
+if [ X${TESTFILE}X = XX ]; then
+    TESTFILE="default.test"
+fi
+
+if [ -f $TESTFILE ]; then
+    TESTS=${TESTFILE}
+elif [ -f ${TESTFILE}.test ]; then
+    TESTS=${TESTFILE}.test
+elif [ -f ${HBENCHROOT}/conf/${TESTFILE} ]; then
+    TESTS=${HBENCHROOT}/conf/${TESTFILE}
+elif [ -f ${HBENCHROOT}/conf/${TESTFILE}.test ]; then
+    TESTS=${HBENCHROOT}/conf/${TESTFILE}.test
+else
+    echo "Unable to locate test file ${TESTFILE}."
+    echo "Fix run file $1 and retry"
+    exit 1
+fi
+
+echo "Using test file: $TESTS"
+
+# Step 6: Figure out if we are using counters, and select the appropriate
+#         binary directory.
+
+if [ "X${EVENTCOUNTER1}X" != "XX" -o "X${EVENTCOUNTER2}X" != "XX" ]; then
+    BINDIR=$EVENTCOUNTERBINDIR
+    COUNTERTYPE=2
+elif [ ${CYCLECOUNTER} = YES ]; then
+    BINDIR=$CYCLECOUNTERBINDIR
+    COUNTERTYPE=1
+else
+    BINDIR=$PLAINBINDIR
+    COUNTERTYPE=0
+fi
+
+echo "Using binaries from: $BINDIR"
+
+if [ ! -d $BINDIR ]; then
+    echo "Unable to locate binaries in ${BINDIR}"
+    echo "Either put them there, or adjust the ...BINDIR variables"
+    echo "in the run file $1."
+    exit 1
+fi
+
+echo $ECHON "Using counter mode: ${ECHOC}"
+case $COUNTERTYPE in
+    2) echo "event";;
+    1) echo "cycle";;
+    0) echo "none";;
+    *) echo "unknown";;
+esac
+    
+# Step 7: Figure out where results should go, and create that directory.
+EXT=0
+if [ ! -d $RESULTDIRBASE ]; then
+    mkdir -p $RESULTDIRBASE
+fi
+
+RESULTDIR=$RESULTDIRB
+while [ -d $RESULTDIR ]; do
+    EXT=`expr $EXT + 1`
+    RESULTDIR=$RESULTDIRB.$EXT
+done
+
+if [ ! -d $RESULTDIR ]; then 
+    mkdir $RESULTDIR
+fi
+
+echo Results going to: $RESULTDIR
+
+STDERR=$RESULTDIR/stderr
+touch $STDERR
+
+##########################################
+#
+# At this point, all of the various and sundry parsing and setup is done.
+# Now, we check to make sure we have enough memory and gather information
+# on the system, including things like uname output, clock speed, etc.
+#
+############
+# Calculate clock speed
+echo ""
+echo "Measuring system clock speed. Please wait..."
+
+MHZPRINT=`${BINDIR}/mhz 2>> ${STDERR}`
+echo $MHZPRINT > $RESULTDIR/mhz
+MHZ=`${BINDIR}/mhz -c 2>> ${STDERR}` 
+echo $MHZ > $RESULTDIR/cycletime
+echo "     Clock speed: $MHZPRINT"
+
+CLKMUL=1
+if [ $COUNTERTYPE -ge 1 ]; then
+    CNTRMHZ=`${BINDIR}/mhz-counter -c 2>> $STDERR`
+    CLKMUL=`echo $MHZ / $CNTRMHZ | bc -l`
+    echo "     Clock multiplier (for cycle counter): $CLKMUL"
+fi
+
+# Now calculate available physical memory.
+echo ""
+echo "Calculating available physical memory. Please wait..."
+case $COUNTERTYPE in
+    2) AVAILMEM=`${BINDIR}/memsize $CLKMUL 16`;;
+    1) AVAILMEM=`${BINDIR}/memsize $CLKMUL 16`;;
+    *) AVAILMEM=`${BINDIR}/memsize 16`;;
+esac
+
+if [ X${FREEMB}X != XX ]; then
+    if [ $AVAILMEM -lt $FREEMB ]; then
+	echo "Warning: requested memory buffer of ${FREEMB}MB not available; using ${AVAILMEM}MB instead."
+	MB=$AVAILMEM
+    elif [ $AVAILMEM -gt $FREEMB ]; then
+	MB=$FREEMB
+	echo "Warning: requested memory buffer of ${FREEMB}MB is smaller than maximum"
+	echo "         available; clamping at requested value of ${MB}MB."
+    fi
+else
+    MB=`expr $AVAILMEM / 2`
+    echo "Using ${MB}MB of memory."
+fi
+AVAILKB=`expr $MB \* 1024`
+
+# Now create temporary (scratch) file
+echo ""
+echo $ECHON "Creating ${MB} MB scratch file as ${SCRATCHFILE}...${ECHOC}"
+if [ -f $BINDIR/lmdd ]; then
+    $BINDIR/lmdd of=$SCRATCHFILE move=${MB}m > /dev/null 2>&1
+else
+    dd of=$SCRATCHFILE if=/dev/zero bs=1024k count=$MB > /dev/null 2>&1
+fi
+echo "done."
+
+# Gather system details
+echo ""
+echo $ECHON "Gathering system details...${ECHOC}"
+
+echo "System configuration for ${SYSTEMNAME}" > $RESULTDIR/sysconf
+echo "" >> $RESULTDIR/sysconf
+echo "System name: $SYSTEMNAME" >> $RESULTDIR/sysconf
+echo "System type: $HOSTTYPE" >> $RESULTDIR/sysconf
+echo "Architecture: $ARCH" >> $RESULTDIR/sysconf
+echo "OS type: $OSTYPE" >> $RESULTDIR/sysconf
+echo "" >> $RESULTDIR/sysconf
+echo "Testset: $TESTFILE" >> $RESULTDIR/sysconf
+echo "Runs: $NRUNS" >> $RESULTDIR/sysconf
+echo "" >> $RESULTDIR/sysconf
+echo $ECHON "Counter mode: ${ECHOC}" >> $RESULTDIR/sysconf
+case $COUNTERTYPE in
+    2) echo "event" >> $RESULTDIR/sysconf;;
+    1) echo "cycle" >> $RESULTDIR/sysconf;;
+    0) echo "none" >> $RESULTDIR/sysconf;;
+    *) echo "unknown" >> $RESULTDIR/sysconf;;
+esac
+if [ $COUNTERTYPE -eq 2 ]; then
+    echo "Event counter 1: $EVENTCOUNTER1" >> $RESULTDIR/sysconf
+    echo "Event counter 2: $EVENTCOUNTER1" >> $RESULTDIR/sysconf
+fi
+echo "" >> $RESULTDIR/sysconf
+echo "Memory used: $MB" >> $RESULTDIR/sysconf
+echo "Raw disk: $RAWDISK" >> $RESULTDIR/sysconf
+echo "Scratch file: $SCRATCHFILE" >> $RESULTDIR/sysconf
+echo "Scratch directory: $SCRATCHDIR" >> $RESULTDIR/sysconf
+echo "Remote: ${REMOTE}" >> $RESULTDIR/sysconf
+echo "Networks: ${NETWORKS}" >> $RESULTDIR/sysconf
+echo "" >> $RESULTDIR/sysconf
+echo  "Date: [`date`]" >> $RESULTDIR/sysconf
+echo  "Uptime: [`uptime`]" >> $RESULTDIR/sysconf
+echo "" >> $RESULTDIR/sysconf
+echo "Interfaces: " >> $RESULTDIR/sysconf
+netstat -i 2>&1 | while read i
+do	echo \[net: "$i"]  >> $RESULTDIR/sysconf
+	set `echo $i`
+	case $1 in
+	    *ame)	;;
+	    *)		ifconfig $1 2>& 1 | while read i
+			do echo \[if: "$i"] >> $RESULTDIR/sysconf
+			done
+			;;
+	esac
+done
+
+echo "" >> $RESULTDIR/sysconf
+echo "Mounted filesystems:" >> $RESULTDIR/sysconf
+mount -p 2>&1 | while read i
+do	echo \[mount: "$i"] >> $RESULTDIR/sysconf
+done
+
+# In case mount -p doesn't work.
+df 2>& 1 | while read i
+do	echo \[df: "$i"] >> $RESULTDIR/sysconf
+done
+
+echo "done."
+
+########################################################
+#
+# OK, we can finally start running the tests themselves.
+#
+# We read in the test file one line at a time, parsing it and
+# executing each test in turn.
+#
+# All tests take similar argument patterns:
+#    - If run without counters, no special arguments
+#    - If run with a cycle counter, argv[1] gets the clock multiplier
+#    - If run with event counters, the counter values are passed via
+#      "-cN xxx" which sets up counter N with code xxx. The cycle counter
+#      multiplier is the first non-counter argument
+#
+###########
+
+##
+## This function actually runs the test, inserting parameters as necessary
+## for counters, etc.
+## $1 = test name
+## $2 = number of runs to do
+## $3 = arguments to test
+## $4 = output filename
+##
+run_test() {
+    # unset IFS so that arguments actually get split when sent to program
+    TMPIFSX=$IFS
+    IFS=" "
+
+    rm -f $RESULTDIR/$4
+    touch $RESULTDIR/$4
+
+    case $COUNTERTYPE in
+	2)
+	    # event counters
+	    ITERS=`$BINDIR/$1 $CLKMUL 0 $3 2>/dev/null`
+	    if [ X${ITERS}X = XX ]; then
+		rm -f $RESULTDIR/$4
+		return
+	    fi
+	    LOOPS=$2
+
+	    echo "   ...$4"
+	    while expr $LOOPS > /dev/null 2>&1
+	    do
+                LOOPS=`expr $LOOPS - 1`
+		if [ X${EVENTCOUNTER1}X != XX -a X${EVENTCOUNTER2}X != XX ]
+		then
+		    $BINDIR/$1 -c1 $EVENTCOUNTER1 -c2 $EVENTCOUNTER2 $CLKMUL $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+		elif [ X${EVENTCOUNTER1}X != XX -a X${EVENTCOUNTER2}X = XX ]
+		then
+		    $BINDIR/$1 -c1 $EVENTCOUNTER1 $CLKMUL $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+		elif [ X${EVENTCOUNTER1}X = XX -a X${EVENTCOUNTER2}X != XX ]
+		then
+		    $BINDIR/$1 -c2 $EVENTCOUNTER2 $CLKMUL $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+		else
+		    $BINDIR/$1 $CLKMUL $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+		fi
+	    done
+	    ;;
+	1)
+	    # cycle counters
+	    ITERS=`$BINDIR/$1 $CLKMUL 0 $3 2>/dev/null`
+	    if [ X${ITERS}X = XX ]; then
+		rm -f $RESULTDIR/$4
+		return
+	    fi
+	    LOOPS=$2
+
+	    echo "   ...$4"
+	    while expr $LOOPS > /dev/null 2>&1
+	    do
+                LOOPS=`expr $LOOPS - 1`
+                $BINDIR/$1 $CLKMUL $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+	    done
+	    ;;
+	*)
+	    # assume no counters
+	    ITERS=`$BINDIR/$1 0 $3 2>/dev/null`
+	    if [ X${ITERS}X = XX ]; then
+		rm -f $RESULTDIR/$4
+		return
+	    fi
+	    LOOPS=$2
+
+	    echo "   ...$4"
+	    while expr $LOOPS > /dev/null 2>&1
+	    do
+                LOOPS=`expr $LOOPS - 1`
+                $BINDIR/$1 $ITERS $3 >> $RESULTDIR/$4 2>> $STDERR
+	    done
+	    ;;
+    esac
+
+    # restore IFS
+    IFS=$TMPIFSX
+}
+
+##
+## run_remote_test(): runs a test requiring a remote server; assumes
+##                    client-side timing
+##
+run_remote_test() {
+    if [ X${DISABLELOCALHOST}X = XYX ]; then
+	MACHINELIST=$REMOTE
+    else
+	MACHINELIST=localhost $REMOTE
+    fi
+    for machine in $MACHINELIST
+    do
+	if [ $machine = localhost ]; then
+	    case $COUNTERTYPE in
+		2)
+		    $BINDIR/$1 $CLKMUL 0 $3 -s 2>> $STDERR
+		    ;;
+		1)
+		    $BINDIR/$1 $CLKMUL 0 $3 -s 2>> $STDERR
+		    ;;
+		*)
+		    $BINDIR/$1 0 $3 -s 2>> $STDERR
+		    ;;
+	    esac
+	else
+	    ${RCP} ${HBENCHROOT}/scripts/config.guess ${machine}:/tmp/get-os
+	    REMOTEOS=`$RSH $machine -n /tmp/get-os | sed 's/^.*-.*-//`
+	    ${RCP} ${HBENCHROOT}/bin/${REMOTEOS}/$1 ${machine}:/tmp
+
+	    $RSH $machine -n /tmp/$1 0 $3 -s 2>> $STDERR &
+	fi
+	sleep 2
+	if [ X${3}X = XX ]; then
+	    args=$machine
+	else
+	    args="$3 $machine"
+	fi
+	run_test $1 $2 $args ${1}_`echo ${args} | sed "s/ /_/g"`
+
+	case $COUNTERTYPE in
+	    2)
+		$BINDIR/$1 $CLKMUL 0 $3 -${machine} 2>> $STDERR
+		;;
+	    1)
+		$BINDIR/$1 $CLKMUL 0 $3 -${machine} 2>> $STDERR
+		;;
+	    0)
+		$BINDIR/$1 0 $3 -${machine} 2>> $STDERR
+		;;
+	esac
+	if [ $machine != localhost ]; then
+	    $RSH $machine rm -f /tmp/$1 /tmp/get-os
+	fi
+    done
+}
+
+##
+## check_size(): check if a test fits in memory.
+##
+check_size() {
+    desiredmem=$1
+    desired_num=`echo $desiredmem | sed "s/[a-zA-Z]//g"`
+    case $desiredmem in
+	*k)
+	    if [ $desired_num -le $AVAILKB ]; then
+		return 0
+	    fi
+	    ;;
+	*m)
+	    if [ $desired_num -le $MB ]; then
+		return 0
+	    fi
+	    ;;
+	*)
+	    # assume bytes
+	    AVAILBYTES=`expr $AVAILKB \* 1024`
+	    if [ $desired_num -le $AVAILBYTES ]; then
+		return 0
+	    fi
+	    ;;
+     esac
+     return 1
+}
+
+##
+## A function to parse a line of the test listing file; it extracts the 
+## test and parameters, then runs the test via run_test(), above.
+##
+parse_test() {
+    benchmark=$1
+    shift
+
+# Note: on entry to this routine, IFS is ":". We need to switch it to " "
+# to make $@ work on broken SYSV platforms/shells, but then back to ":"
+# before calling run_test. UGH UGH UGH
+
+    case $benchmark in
+	lat_proc)
+	    if [ -f $BINDIR/hello ]; then
+		cp $BINDIR/hello /tmp/hello
+	    fi
+	    if [ -f $BINDIR/hello-s ]; then
+		cp $BINDIR/hello-s /tmp/hello-s
+	    fi
+	    # this benchmark requires paramaters, so assume we've got them
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		# don't run the static (dynamic) tests if not supported
+		if [ `echo ${arg} |grep static | wc -l` -ge 1 -a ! -f /tmp/hello-s ]
+		then
+		    continue
+		fi
+		if [ `echo ${arg} |grep dynamic | wc -l` -ge 1 -a ! -f /tmp/hello ]
+		then
+		    continue
+		fi
+		run_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	    done
+
+	    rm -f /tmp/hello /tmp/hello-s
+	    ;;
+	lat_mmap)
+	    # assume we have parameters!
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		arg2="${arg} ${SCRATCHFILE}"
+		if check_size $arg; then
+		    run_test $benchmark $NRUNS $arg2 ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	        fi
+	    done
+	    ;;
+	bw_mem_rd)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		if check_size $arg; then
+		    run_test $benchmark $NRUNS $arg ${benchmark}_${arg}
+		fi
+	    done
+	    ;;
+	bw_mem_wr)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		if check_size $arg; then
+		    run_test $benchmark $NRUNS $arg ${benchmark}_${arg}
+		fi
+	    done
+	    ;;
+	bw_bzero)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		if check_size $arg; then
+		    run_test $benchmark $NRUNS $arg ${benchmark}_${arg}
+		fi
+	    done
+	    ;;
+	bw_mem_cp)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		firstarg=`echo $arg |sed "s/ .*$//g"`
+		if check_size $firstarg; then
+		    run_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+		fi
+	    done
+	    ;;
+	bw_file_rd)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		arg2="${arg} ${SCRATCHFILE}"
+		firstarg=`echo $arg |sed "s/ .*$//g"`
+		if check_size $firstarg; then
+		    run_test $benchmark $NRUNS $arg2 ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	        fi
+	    done
+	    ;;
+	bw_mmap_rd)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		arg2="${arg} ${SCRATCHFILE}"
+		firstarg=`echo $arg |sed "s/ .*$//g"`
+		if check_size $firstarg; then
+		    run_test $benchmark $NRUNS $arg2 ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	        fi
+	    done
+	    ;;
+	bw_tcp)
+	    if [ X${REMOTE}X != XX ]; then
+		# For the remote version,
+		# stash old value of bindir, countertype and set up to simulate
+		# counterless system.
+		#
+		# Counters are too complicated, since the bandwidth
+		# is measured at the (remote) server, which may
+		# have a different architecture, clock rate, or
+		# counter set.
+		OLDBINDIR=$BINDIR
+		OLDCOUNTERTYPE=$COUNTERTYPE
+		COUNTERTYPE=0
+		BINDIR=$PLAINBINDIR
+
+		DISABLELOCALHOST=Y
+		IFS=" "
+		for arg in "$@"
+		do
+		    IFS=:
+		    run_remote_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+		done
+
+		DISABLELOCALHOST=""
+
+		# Restore bindir, countertype
+		BINDIR=$OLDBINDIR
+		COUNTERTYPE=$OLDCOUNTERTYPE
+	    fi
+	    # Now run the localhost version, overwriting the localhost 
+	    # result taken above. This lets us re-enable counters for
+	    # localhost, if possible.
+	    OLDREMOTE=$REMOTE
+	    REMOTE=""
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		run_remote_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	    done
+	    REMOTE=$OLDREMOTE
+	    ;;
+	lat_connect)
+	    run_remote_test $benchmark $NRUNS "" ${benchmark}
+	    ;;
+	lat_tcp)
+	    run_remote_test $benchmark $NRUNS "" ${benchmark}
+	    ;;
+	lat_udp)
+	    run_remote_test $benchmark $NRUNS "" ${benchmark}
+	    ;;
+	lat_rpc)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		run_remote_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	    done
+	    ;;
+	lat_mem_rd)
+	    echo "   ...lat_mem_rd (this takes about `expr 20 \* ${NRUNS}` minutes)"
+
+	    LMRLIST="${MB}m"
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		# NOTE: we treat the stride size, which is really in bytes,
+		#       as being in kilobytes when checking it. This guarantees
+		#       us at least 1024 strides.
+		IFS=:
+		if check_size ${arg}k; then
+		    LMRLIST="$LMRLIST $arg"
+		fi
+	    done
+
+	    # Create output directory
+	    mkdir $RESULTDIR/lat_mem_rd
+
+	    # Munge IFS to split args again
+	    TMPIFSX=$IFS
+	    IFS=" "
+	    case $COUNTERTYPE in
+		2)
+		    # event counters
+		    if [ X${EVENTCOUNTER1}X != XX -a X${EVENTCOUNTER2}X != XX ]
+		    then
+		        $BINDIR/lat_mem_rd -c1 $EVENTCOUNTER1 -c2 $EVENTCOUNTER2 $CLKMUL $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    elif [ X${EVENTCOUNTER1}X != XX -a X${EVENTCOUNTER2}X = XX ]
+		    then
+		        $BINDIR/lat_mem_rd -c1 $EVENTCOUNTER1 $CLKMUL $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    elif [ X${EVENTCOUNTER1}X = XX -a X${EVENTCOUNTER2}X != XX ]
+		    then
+		        $BINDIR/lat_mem_rd -c2 $EVENTCOUNTER2 $CLKMUL $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    else
+		        $BINDIR/lat_mem_rd $CLKMUL $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    fi
+		    ;;
+		1)
+		    # cycle counters
+		    $BINDIR/lat_mem_rd $CLKMUL $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    ;;
+		*)
+		    # assume no counters
+		    $BINDIR/lat_mem_rd $MHZ $NRUNS $RESULTDIR/lat_mem_rd $LMRLIST 2>> $STDERR
+		    ;;
+	    esac
+	    # restore IFS
+	    IFS=$TMPIFSX
+	    ;;
+	lat_fs)
+	    IFS=" "
+	    for arg in "$@"
+	    do
+		IFS=:
+		arg2="${arg} ${SCRATCHDIR}"
+		run_test $benchmark $NRUNS $arg2 ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+	    done
+	    ;;
+	*)
+	    # default: attempt to run test using normal syntax
+	    if [ $# -eq 0 ]; then
+		run_test $benchmark $NRUNS "" ${benchmark}
+	    else
+		IFS=" "
+		for arg in "$@"
+		do
+		    IFS=:
+		    run_test $benchmark $NRUNS $arg ${benchmark}_`echo ${arg} | sed "s/ /_/g"`
+		done
+	    fi
+	    ;;
+    esac
+}
+
+##
+## Finally, the main processing loop. Control ends up here after all
+## the set-up. We loop through the file, reading in each line. After
+## stripping comments, blank lines, and lines that lack the
+## appropriate colon delimiter, we pass each line to parse_test() for
+## processing and execution.
+##
+
+echo ""
+echo "Running benchmark tests..."
+
+OLDIFS=$IFS			# Do field splitting on ":" to parse file
+
+cat $TESTS | while read TESTLINE
+do
+    case $TESTLINE in
+	\#*)
+	    continue;;		# strip comments
+	"")
+	    continue;;
+	STOP)
+	    break;;		# allow user to halt tests at a certain point
+	*)
+	    # Process a test
+	    IFS=:
+	    parse_test $TESTLINE
+	    IFS=$OLDIFS;;
+    esac
+done
+
+IFS=$OLDIFS
+
+##
+## Now do necessary post-benchmark cleanup.
+##
+
+echo "done."
+echo ""
+
+# get rid of the scratch file
+rm -f $SCRATCHFILE
+
+echo $ECHON "Extracting version information...${ECHOC}"
+
+grep Id $STDERR | sort | uniq > $RESULTDIR/versions
+grep -v Id $STDERR > $RESULTDIR/errors
+
+echo "done."
+
+if [ X`perl -e 'print "perltest\n";' 2>&1`X = XperltestX ]; then
+    echo $ECHON "Generating summary information...${ECHOC}"
+    rm -f ${RESULTDIR}/summary
+    ${HBENCHROOT}/scripts/gen-summary ${RESULTDIR} > ${RESULTDIR}/summary
+    echo "done."
+
+    echo $ECHON "Performing basic automated data analysis...${ECHOC}"
+    rm -f ${RESULTDIR}/analysis
+    ${HBENCHROOT}/scripts/gen-analysis ${RESULTDIR} > ${RESULTDIR}/analysis
+    echo "done."
+
+    if [ `cat $RESULTDIR/errors | wc -l` -gt 0 ]; then
+	echo ""
+	echo "Errors encountered during benchmark run; see file:"
+	echo "   ${RESULTDIR}/errors"
+	echo "for details."
+    fi
+else
+    rm -f ${RESULTDIR}/summary ${RESULTDIR}/analysis
+    echo "Summary not available, as perl is not available on this system." > ${RESULTDIR}/summary
+    echo "Analysis not available, as perl is not available on this system." > ${RESULTDIR}/analysis
+fi
+
+echo ""
+echo Benchmark run completed at `date`
+echo Benchmark run completed at `date` >> $RESULTDIR/sysconf

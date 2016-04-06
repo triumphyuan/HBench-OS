@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# getostype: take a config.guess-emitted OS type, and attempt to convert
+# it into the "base" OS type. For example, NetBSD1.2G -> netbsd,
+# sunos5.5 -> sunos5
+# 
+# Usage: getostype <osname>
+#
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+#
+# $Id: getostype,v 1.2 1997/06/27 00:36:21 abrown Exp $
+
+case $1 in
+	*sunos4*)	echo sunos;;
+	*sunos5*)	echo solaris;;
+	*solaris1*)	echo sunos;;
+	*solaris2*)	echo solaris;;
+	*)		echo $1 | sed 's/[0-9].*$//';;
+esac

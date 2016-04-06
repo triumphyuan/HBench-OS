@@ -1,0 +1,64 @@
+# Figure out dependencies for hbench src.
+#
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+# Copyright (c) 1994 Larry McVoy.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# This work is derived from, but can no longer be called, lmbench.
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+#
+# Based on:
+# 	$lmbenchId: depend,v 1.2 1995/09/01 01:23:35 lm Exp $
+
+eval 'exec perl -Ssw $0 "$@"'
+	if 0;
+
+open(M, "Makefile");
+while(<M>) {
+	push(@Makefile, $_);
+	last if /^..MAKEDEPEND/;
+}
+close(M);
+open(G, "gcc -MM *.c |");
+$full_line = "";
+while ($dependline = <G>) {
+	if ($dependline =~ /\\$/) {
+		chop($dependline);
+		$dependline =~ s/\\$//;	
+		$full_line = $full_line . $dependline;
+		next;
+	}
+	$full_line = $full_line . $dependline;
+	if ($full_line =~ /mhz\.c/ || $full_line =~ /lat_ctx2\.c/ || 
+	    $full_line =~ /hello\.c/) {
+	    $full_line = "";
+	    next;
+	}
+	@splitout = split(/:/, $full_line);
+	$full_line = "";
+	$splitout[0] =~ s/\.o\s*$//;
+	push(@Makefile, "\$(BINDIR)/$splitout[0]: $splitout[1]");
+	push(@Makefile, "\t\$(COMPILE) -o \$(BINDIR)/$splitout[0] $splitout[0].c \$(LDLIBS)\n\n");
+}
+system "mv Makefile Makefile.old";
+open(M, ">Makefile");
+print M @Makefile;
+close(M);
+exit 0;

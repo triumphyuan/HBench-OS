@@ -1,0 +1,77 @@
+#!/bin/sh
+#
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+
+#
+# gen-summary
+#
+# This script reads the data files in a result directory, and 
+# produces a nice ~300-line file (depending on the number of benchmarks)
+# with all of the results in it.
+#
+# $Id: gen-summary,v 1.3 1997/06/27 00:36:21 abrown Exp $
+
+DIR=$1
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <result-dir>"
+    exit 1
+fi
+
+if [ -d $1 ]; then
+    cd $1
+else
+    echo "Unable to change to directory $1"
+    exit 1
+fi
+
+# Step 1: Discover hbench root path
+HBENCHROOT=`(cd \`dirname $0\`/.. ; pwd)`
+
+# Some general system information
+echo "HBench-OS 1.0 Summary Output"
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo 
+head -11 sysconf | tail -9
+echo 
+
+# Now go test-by-test
+for benchmark in lat_syscall lat_fslayer lat_sig lat_pipe lat_proc lat_mmap bw_mem_rd bw_mem_wr bw_bzero bw_mem_cp bw_file_rd bw_mmap_rd bw_pipe bw_tcp lat_connect lat_tcp lat_udp lat_rpc lat_fs lat_ctx lat_ctx2
+do
+    echo "${benchmark}:"
+    FILES="${benchmark}_* ${benchmark}"
+    FILES=`echo ${FILES} | ${HBENCHROOT}/scripts/argsort`
+    for file in $FILES
+    do
+	if [ -f $file ]; then
+	    PARAMS=`echo $file |sed "s/${benchmark}_*//" | sed "s/_/ /g"`
+	    if [ "X${PARAMS}X" = XX ]; then
+		PARAMS="<default>"
+	    fi
+	    PARAMS="${PARAMS}: "
+	
+	    echo "   ${PARAMS}`${HBENCHROOT}/scripts/stats-full $file 2>&1`"
+	fi
+    done
+    echo
+done

@@ -1,0 +1,15 @@
+The set of programs and documentation which are contained in this 
+distribution and herein referred to as "HBench-OS", or simply "hbench",
+are distributed under the GNU General Public License (see the file
+"COPYING" in this directory) with the following additional restriction,
+which overrides any conflicting restrictions in the GPL:
+
+        These unmodified benchmarks, and any results obtained through their
+        use, may not be described in any public forum or publication
+        under any name other than "HBench-OS", unless an exemption is
+        explicitly granted by either Aaron Brown or Margo Seltzer.
+
+We also request that if you have any fixes or enhancements to the
+benchmarks that you mail them either to the HBench-OS author, Aaron
+Brown (abrown@eecs.harvard.edu), or to the current HBench maintainer
+(reachable at hbench@eecs.harvard.edu).

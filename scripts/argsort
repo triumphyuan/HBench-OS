@@ -1,0 +1,73 @@
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+
+#
+# argsort
+#
+# Perl script to do custom sorting for arguments in filenames
+#
+# $Id: argsort,v 1.2 1997/06/27 00:36:21 abrown Exp $
+
+eval "exec perl $0 $*"
+	if 0;
+
+
+while (<STDIN>) {
+    chop();
+
+    push(@indata, split(/\s+/, $_));
+}
+
+@out = sort my_sort @indata;
+
+while ($outline = shift(@out)) {
+    print $outline . "\n";
+}
+
+sub my_sort {
+    local($a2, $b2);
+    $a2 = $a;
+    $b2 = $b;
+    # we approximate 1024 by 1000 to make the regexp handling easier
+    $a2 =~ s/([0-9]+)m/{\1}000k/g;
+    $a2 =~ s/([0-9]+)k/{\1}000/g;
+    $a2 =~ s/[\{\}]//g;
+    $a2 =~ s/[a-z_]/ /g;
+    $a2 =~ s/^\s+//;
+    $a2 =~ s/\s+/ /;
+    $b2 =~ s/([0-9]+)m/{\1}000k/g;
+    $b2 =~ s/([0-9]+)k/{\1}000/g;
+    $b2 =~ s/[\{\}]//g;
+    $b2 =~ s/[a-z_]/ /g;
+    $b2 =~ s/^\s+//;
+    $b2 =~ s/\s+/ /;
+    ($fa1, $fa2, $fa3, $fa4, $fa5, $fa6, $fa7, $fa8) = split(/\s+/, $a2);
+    ($fb1, $fb2, $fb3, $fb4, $fb5, $fb6, $fb7, $fb8) = split(/\s+/, $b2);
+    ($fa1 <=> $fb1 || 
+     $fa2 <=> $fb2 ||      
+     $fa3 <=> $fb3 ||      
+     $fa4 <=> $fb4 ||      
+     $fa5 <=> $fb5 ||      
+     $fa6 <=> $fb6 ||      
+     $fa7 <=> $fb7 ||      
+     $fa8 <=> $fb8 || $a cmp $b);
+}

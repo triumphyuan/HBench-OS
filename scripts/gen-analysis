@@ -1,0 +1,394 @@
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+
+#
+# gen-analysis
+#
+# This perl script attempts to perform some rudimentary automatic analysis
+# on the benchmark results. It is still rather limited at this point, and
+# doesn't tell you too much, but it can provide a starting point for more
+# detailed analysis.
+#
+# Output goes to stdout
+#
+# $Id: gen-analysis,v 1.4 1997/06/27 00:36:21 abrown Exp $
+
+# get into perl
+eval "exec perl $0 $*"
+	if 0;
+
+if ($#ARGV != 0) {
+	die "Usage: gen-analysis <result-dir>\n";
+}
+
+$dir=@ARGV[0];
+
+if ( -d $dir) {
+    chdir($dir) || die "Can't change to directory" . $dir . "\n";
+}
+
+# Step 1: Discover hbench root path
+$HBENCHROOT=`(cd \`dirname $0\`/.. ; pwd)`;
+chop($HBENCHROOT);
+
+# Some general system information
+print "HBench-OS 1.0 Automatic Analysis Output\n";
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+print "\nNOTE: this analysis is rudimentary, and its conclusions should not";
+print "\n      be used directly without further verification. It is provided";
+print "\n      as a guideline for further analysis only.\n\n";
+print "System and Run Details\n";
+print "----------------------\n";
+open(SYSCONF,"sysconf");
+$_ = <SYSCONF>;
+$_ = <SYSCONF>;
+for ($i = 0; $i < 8; $i++) {
+    $_ = <SYSCONF>;
+    print $_;
+}
+close(SYSCONF);
+print "\nAnalysis\n";
+print   "--------\n";
+
+##
+## Memory Hardware
+##
+print "Memory System Hardware\n";
+
+# Start by getting the cycle time.
+$cycletime = `cat cycletime`;
+chop($cycletime);
+
+# We want to get cache sizes and latencies here.
+# We'll use the latency data to identify the sizes and latencies.
+# Let's choose stride=128, since that should be bigger than most cache line 
+# sizes.
+opendir(RESULTDIR,"lat_mem_rd") || die "opendir: no memory latency results present";
+@latencyfiles = grep(/rd_.*_.*128$/, readdir(RESULTDIR));
+closedir(RESULTDIR);
+
+# sort so we start from the L1 cache-end
+@latencyfiles = sort(@latencyfiles);
+
+# Now we want to look for anywhere we have a sustained (at least 2 points)
+# jump in latency. We define a jump as a factor of 10%; this is reasonable
+# for the machines we've seen, but may not be in general. We sample the
+# cache size/latency at the point where the latency has not increased by
+# more than 10% for at least 3 data points.
+$threshold = 1.1;
+$curlevel = 0;
+$lastval = 0.0;
+$stable = 20;
+$lastsize = 0.0;
+foreach $file (@latencyfiles) {
+    $val = `${HBENCHROOT}/scripts/stats-single lat_mem_rd/$file`;
+    chop($val);
+
+    if ($val > $threshold*$lastval || $val < $lastval*(2-$threshold)) {
+	# If we've been stable, we're now at the end of the cache, so
+	# record the size and increment the cache level.
+	if ($stable >= 6) {
+	    if ($curlevel > 0) {
+		@cachesize[$curlevel] = $lastsize;
+	    }
+	    $curlevel++;
+	}
+	$stable = 0;
+	$lastval = $val;
+    } else {
+	$stable++;
+	if ($stable == 6) {
+	    # we've hit a new plateau; record the latency.
+	    @cachelatency[$curlevel] = $val;
+	}
+    }
+    $lastsize = $file;
+    $lastsize =~ s/^rd_0*([0-9]+)_.*/\1/;
+    $lastsize /= 1024;
+}
+
+print " * Cache Latencies and Estimated Sizes:\n";
+$subber = 0;
+for ($lev = 1; $lev < $curlevel; $lev++) {
+    $ncycles = @cachelatency[$lev]/$cycletime;
+    $ncyclesint = int($ncycles + 0.5);
+    # If this isn't about an integral multiple of some # of cycles, assume
+    # it is bogus
+#    if (abs($ncycles - $ncyclesint) > 0.15) {
+#	$subber++;
+#	next;
+#    }
+    printf("    L%d Cache: %dKB, latency %.1f ns (%.1f cycles)\n",
+	   $lev-$subber, @cachesize[$lev], @cachelatency[$lev], $ncycles);
+}
+printf("    DRAM mem: latency %.1f ns (%.1f cycles)\n", 
+       @cachelatency[$curlevel], @cachelatency[$lev]/$cycletime);
+print "\n    NOTE: L2 cache sizes are particularly hard to determine automatically;\n";
+print "          please use gen-latgraph to examine the full latency graph to\n";
+print "          confirm these estimated values for cache size.\n\n";
+
+# Let's look at raw read, write, and zero bandwidths
+print " * Raw Memory Bandwidths\n";
+
+$l1buf = "4k";
+if (@cachesize[2] >= 128) {
+    $l2buf = "128k";
+} else {
+    $l2buf = "64k";
+}
+$drambuf = "4m";
+
+$l1read = `${HBENCHROOT}/scripts/stats-single bw_mem_rd_$l1buf`;
+chop($l1read);
+$l2read = `${HBENCHROOT}/scripts/stats-single bw_mem_rd_$l2buf`;
+chop($l2read);
+$dramread = `${HBENCHROOT}/scripts/stats-single bw_mem_rd_$drambuf`;
+chop($dramread);
+$l1write = `${HBENCHROOT}/scripts/stats-single bw_mem_wr_$l1buf`;
+chop($l1write);
+$l2write = `${HBENCHROOT}/scripts/stats-single bw_mem_wr_$l2buf`;
+chop($l2write);
+$dramwrite = `${HBENCHROOT}/scripts/stats-single bw_mem_wr_$drambuf`;
+chop($dramwrite);
+$l1zero = `${HBENCHROOT}/scripts/stats-single bw_bzero_$l1buf`;
+chop($l1zero);
+$l2zero = `${HBENCHROOT}/scripts/stats-single bw_bzero_$l2buf`;
+chop($l2zero);
+$dramzero = `${HBENCHROOT}/scripts/stats-single bw_bzero_$drambuf`;
+chop($dramzero);
+
+printf ("    L1\$ : %.2fMB/sec read, %.2fMB/sec write, %.2f read/write ratio\n",
+	$l1read,$l1write,$l1read/$l1write);
+if (abs(1.0 - $l1read/$l1write) >= 0.2) {
+    print "          Note the interesting discrepancy between read and write bandwidth\n";
+}
+printf ("    L2\$ : %.2fMB/sec read, %.2fMB/sec write, %.2f read/write ratio\n",
+	$l2read,$l2write,$l2read/$l2write);
+if (abs(1.0 - $l2read/$l2write) >= 0.2) {
+    print "          Note the interesting discrepancy between read and write bandwidth\n";
+}
+printf ("    DRAM: %.2fMB/sec read, %.2fMB/sec write, %.2f read/write ratio\n",
+	$dramread,$dramwrite,$dramread/$dramwrite);
+if (abs(1.0 - $dramread/$dramwrite) >= 0.2) {
+    print "          Note the interesting discrepancy between read and write bandwidth\n";
+}
+
+print "\n * Comparison of (unrolled) Raw Write and (libc) Bzero Bandwidths\n";
+printf("    L1\$ : %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\n",
+       $l1zero, $l1write, $l1zero/$l1write);
+if (abs(1.0 - $l1zero/$l1write) >= 0.1) {
+    print "          There's a significant difference between the two; perhaps the\n";
+    print "          hardware has optimized string instructions or block fill\n";
+    print "          capabilities used by libc?\n"; 
+}
+printf("    L2\$ : %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\n",
+       $l2zero, $l2write, $l2zero/$l2write);
+if (abs(1.0 - $l2zero/$l2write) >= 0.1) {
+    print "          There's a significant difference between the two; perhaps the\n";
+    print "          hardware has optimized string instructions or block fill\n";
+    print "          capabilities used by libc?\n"; 
+}
+printf("    DRAM: %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\n",
+       $dramzero, $dramwrite, $dramzero/$dramwrite);
+if (abs(1.0 - $dramzero/$dramwrite) >= 0.1) {
+    print "          There's a significant difference between the two; perhaps the\n";
+    print "          hardware has optimized string instructions or block fill\n";
+    print "          capabilities used by libc?\n"; 
+}
+
+print "\n * Comparison of Projected and Measured Copy Bandwidths\n";
+print   "   (projection is one-half the harmonic mean of raw read/write bandwidths)\n";
+$l1copy = `${HBENCHROOT}/scripts/stats-single bw_mem_cp_${l1buf}_libc_aligned`;
+chop($l1copy);
+$l2copy = `${HBENCHROOT}/scripts/stats-single bw_mem_cp_${l2buf}_libc_aligned`;
+chop($l2copy);
+$dramcopy = `${HBENCHROOT}/scripts/stats-single bw_mem_cp_${drambuf}_libc_aligned`;
+chop($dramcopy);
+
+$l1proj = 1.0/(1.0/$l1read + 1.0/$l1write);
+$l2proj = 1.0/(1.0/$l2read + 1.0/$l2write);
+$dramproj = 1.0/(1.0/$dramread + 1.0/$dramwrite);
+
+printf("    L1\$ : %.2fMB/sec measured bcopy, %.2fMB/sec projected, %.2f ratio\n",
+       $l1copy, $l1proj, $l1copy/$l1proj);
+if (abs(1.0 - $l1copy/$l1proj) > 0.15) {
+    print "          There's a significant discrepancy between the projection and the\n";
+    print "          real value here; look for some hardware interaction between\n";
+    print "          interleaved reads and writes.\n";
+}
+printf("    L2\$ : %.2fMB/sec measured bcopy, %.2fMB/sec projected, %.2f ratio\n",
+       $l2copy, $l2proj, $l2copy/$l2proj);
+if (abs(1.0 - $l2copy/$l2proj) > 0.15) {
+    print "          There's a significant discrepancy between the projection and the\n";
+    print "          real value here; look for some hardware interaction between\n";
+    print "          interleaved reads and writes.\n";
+}
+printf("    DRAM: %.2fMB/sec measured bcopy, %.2fMB/sec projected, %.2f ratio\n",
+       $dramcopy, $dramproj, $dramcopy/$dramproj);
+if (abs(1.0 - $dramcopy/$dramproj) > 0.15) {
+    print "          There's a significant discrepancy between the projection and the\n";
+    print "          real value here; look for some hardware interaction between\n";
+    print "          interleaved reads and writes.\n";
+}
+
+print "\nOperating System Functionality\n";
+##
+## Null system call time
+##
+opendir(RESULTDIR,".") || die "opendir";
+@latsyscallfiles = grep(/lat_syscall/, readdir(RESULTDIR));
+closedir(RESULTDIR);
+
+$minsyscall = 10000000.0;
+$minsyscall2 = 10000000.0;
+$syscallname = "<unknown>";
+$syscallname2 = "<unknown>";
+
+foreach $file (@latsyscallfiles) {
+    $func = $file;
+    $func =~ s/lat_syscall_//;
+
+    $val = `${HBENCHROOT}/scripts/stats-single $file`;
+    chop($val);
+    if ($val < $minsyscall) {
+	$minsyscall2 = $minsyscall;
+	$syscallname2 = $syscallname;
+	$minsyscall = $val;
+	$syscallname = $func;
+    }
+}
+
+print " * Approximate \"null\" System Call Time: " . $minsyscall . " us\n";
+print "    The system call auto-selected for this case is: ". $syscallname."\n";
+print "    Full statistics: " . `${HBENCHROOT}/scripts/stats-full lat_syscall_$syscallname`;
+if ($syscallname eq "getpid") {
+    print "    NOTE: the system call selected was getpid, which is frequently\n";
+    print "          cached at user-level, and thus not a true system call. If\n";
+    print "          you are unsure whether your system caches getpid, you should\n";
+    print "          use the following (the second-fastest measured) system call instead:\n";
+    print "     Time for the ".$syscallname2." system call: " . $minsyscall2 . " us\n";
+    print "     Full statistics: " . `${HBENCHROOT}/scripts/stats-full lat_syscall_$syscallname2`;
+} else {
+    print "    NOTE: this may be a cached system call, in which case the result\n";
+    print "          is not representative of true null system call time.\n";
+}
+print "\n";
+
+##
+## Process creation
+##
+print  " * Process Creation Analysis:\n";
+print  "    Dynamic processes:\n";
+$nulld = `${HBENCHROOT}/scripts/stats-single lat_proc_null_dummy`;
+chop($nulld);
+$nulls = $nulld;
+$simpled = `${HBENCHROOT}/scripts/stats-single lat_proc_simple_dynamic`;
+chop($simpled);
+$shd = `${HBENCHROOT}/scripts/stats-single lat_proc_sh_dynamic`;
+chop($shd);
+$totald = $shd;
+$shd -= $simpled;
+$simpled -= $nulld;
+
+printf("        fork:    %.2f us (%.2f%%)\n", $nulld, 100.0*$nulld/$totald);
+printf("        exec:    %.2f us (%.2f%%)\n", $simpled, 100.0*$simpled/$totald);
+printf("        /bin/sh: %.2f us (%.2f%%)\n", $shd, 100.0*$shd/$totald);
+printf("      Total:     %.2f us (%.2f%%)\n", $totald, 100.0);
+
+if ( -f "lat_proc_simple_static" && -f "lat_proc_sh_static" ) {
+    print  "    Static processes:\n";
+    $simples = `${HBENCHROOT}/scripts/stats-single lat_proc_simple_static`;
+    chop($simples);
+    $shs = `${HBENCHROOT}/scripts/stats-single lat_proc_sh_static`;
+    chop($shs);
+    $totals = $shs;
+    $shs -= $simples;
+    $simples -= $nulls;
+
+    printf("        fork:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+	   $nulls, 100.0*$nulls/$totals, 100.0*$nulls/$nulld);
+    printf("        exec:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+	   $simples, 100.0*$simples/$totals, 100.0*$simples/$simpled);
+    printf("        /bin/sh: %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+	   $shs, 100.0*$shs/$totals, 100.0*$shs/$shd);
+    printf("      Total:     %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+	   $totals, 100.0, 100.0*$totals/$totald);
+}
+
+##
+## mmap mapping overhead
+##
+print  "\n * Virtual Memory Overhead in Mmap'd Read:\n";
+print  "   (using $drambuf read to avoid low timer resolution)\n";
+
+$mmaprd = `${HBENCHROOT}/scripts/stats-single bw_mmap_rd_$drambuf`;
+chop($mmaprd);
+$mmapoverhead = 1000000/(256*$mmaprd) - 1000000/(256*$dramread);
+printf("     Mmap read bandwidth: %.2fMB/sec; raw HW read bandwidth: %.2fMB/sec\n",
+       $mmaprd, $dramread);
+printf("     Bandwidth decrease: %.2fMB/sec, %.2f ratio (mmap/raw), %.2f%% decrease\n",
+       $dramread - $mmaprd, $mmaprd/$dramread, 100.0*($dramread - $mmaprd)/$dramread);
+printf("     Per-page VM setup overhead (4K page assumed): %.2f us/page\n", $mmapoverhead);
+
+##
+## Copies in TCP transfers (localhost)
+##
+print  "\n * TCP Network Stack Loopback Copy Overhead:\n";
+
+$tcpbw = `${HBENCHROOT}/scripts/stats-single bw_tcp_1m_localhost`;
+chop($tcpbw);
+
+printf("    TCP bandwidth (1MB buffer via localhost): %.2fMB/sec\n",$tcpbw);
+printf("    Ratio of TCP bandwidth to DRAM copy bandwidth: %.2f\n", $tcpbw/$dramcopy);
+printf("    Estimated number of copies of transferred data: %.1f\n",
+       $dramcopy/$tcpbw);
+if ($dramcopy/$tcpbw < 0.8) {
+    print  "       Is this a zero-copy TCP stack? It sure looks like it...\n";
+} elsif (abs($dramcopy/$tcpbw - int($dramcopy/$tcpbw + 0.5)) >= 0.15) {
+    print  "       Since the estimated number of copies is not close to an integer,\n";
+    print  "       it is likely that there are other factors besides simple memory\n";
+    print  "       copies that are bottlenecking the TCP transfers, or perhaps\n";
+    print  "       L2 cache effects are involved.\n";
+}
+
+##
+## Copies in pipe transfers 
+##
+print  "\n * Pipe-based IPC Copy Overhead:\n";
+
+$pipebw = `${HBENCHROOT}/scripts/stats-single bw_pipe_$drambuf`;
+chop($pipebw);
+
+printf("    Pipe bandwidth ($drambuf transfer): %.2fMB/sec\n",$pipebw);
+printf("    Ratio of pipe bandwidth to DRAM copy bandwidth: %.2f\n", $pipebw/$dramcopy);
+printf("    Estimated number of copies of transferred data: %.1f\n",
+       $dramcopy/$pipebw);
+if ( $dramcopy/$pipebw < 0.8 ) {
+    print  "       It looks like there's no unnecessary copying going on.\n";
+} elsif (abs($dramcopy/$pipebw - int($dramcopy/$pipebw + 0.5)) >= 0.15) {
+    print  "       Since the estimated number of copies is not close to an integer,\n";
+    print  "       it is likely that there are other factors besides simple memory\n";
+    print  "       copies that are bottlenecking the pipe transfers, for example\n";
+    print  "       process scheduling between the client and server. There might\n";
+    print  "       also be L2 cache effects that are not accounted for.\n";
+}
+ 

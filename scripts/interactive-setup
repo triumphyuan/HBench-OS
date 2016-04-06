@@ -1,0 +1,458 @@
+#!/bin/sh
+#
+# Copyright (c) 1997 The President and Fellows of Harvard College.
+# All rights reserved.
+# Copyright (c) 1997 Aaron B. Brown.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program, in the file COPYING in this distribution;
+#   if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+#   Cambridge, MA 02139, USA.
+#
+# Results obtained from this benchmark may be published only under the
+# name "HBench-OS".
+
+#
+# Automatically generate a `hostname`.run file for hbench-OS
+#
+# Based on:
+#       $lmbenchId: config-run,v 1.8 1995/11/03 23:04:19 lm Exp $
+#
+# $Id: interactive-setup,v 1.9 1997/06/27 00:36:21 abrown Exp $
+
+SHELL=/bin/sh
+HOSTNAME=`hostname | sed 's/\..*$//'`
+
+# Setup defaults.
+SYSTEMNAME=$HOSTNAME
+HOSTTYPE=`${SHELL} ./scripts/config.guess`
+ARCH=`echo ${HOSTTYPE} | sed 's/-.*-.*$//'`
+OSTYPE=`echo ${HOSTTYPE} | sed 's/^.*-.*-//'`
+CYCLECOUNTER=NO
+EVENTCOUNTER1=""
+EVENTCOUNTER2=""
+TESTFILE=full.test
+NRUNS=10
+RAWDISK=none
+SCRATCHFILE=/usr/tmp/XXX
+SCRATCHDIR=/usr/tmp
+REMOTE=""
+NETWORKS=""
+PLAINBINDIR=
+CYCLECOUNTERBINDIR=
+EVENTCOUNTERBINDIR=
+RESULTDIRBASE=
+
+if [ X${RSH}X = XX ]; then
+    RSH=rsh
+fi
+
+# Introduce ourselves
+cat<<EOF;
+
+Welcome to HBench-OS! Before you can run the benchmarks, you need to
+set up a few configuration parameters. This script will allow you to
+interactively build a configuration file for this particular system;
+it will be saved by default in ./conf/${HOSTNAME}.run, unless you
+specify otherwise below. Once you have created ./conf/${HOSTNAME}.run,
+either via this script, or manually, you can run the benchmarks by invoking
+
+        make run
+
+in the top-level hbench-OS directory.
+
+Please note that, for the most reproducible results, you should not have
+any other activity on the system while running the tests.
+
+EOF
+
+# Figure out echo.
+if [ `echo -n "foo" | wc -l` -eq 0 ]
+then	ECHON="-n"; ECHOC=
+else	ECHON= ; ECHOC='\c'
+fi
+
+# See if they want to use this script
+echo $ECHON "Do you wish to continue with interactive setup? [default yes] $ECHOC"
+read YN
+case $YN in
+    [Nn]*)	echo "Ok, no changes were made to the run files."
+		exit 0
+	;;
+    *)
+	;;
+esac
+
+cat<<EOF
+
+Ok, we'll start with some basic information about the current system. The
+defaults should work fine in almost all cases.
+
+EOF
+
+echo $ECHON "    This machine's (unqualified) hostname? [default ${SYSTEMNAME}] $ECHOC"
+read HOSTNAMEINPUT
+if [ X${HOSTNAMEINPUT}X != XX ]; then
+    SYSTEMNAME=`echo $HOSTNAMEINPUT | sed 's/\..*$//'`
+fi
+
+# Now that we've got the hostname, try to read an existing run file
+# to provide defaults.
+if [ -f ./conf/${SYSTEMNAME}.run ]; then
+    . ./conf/${SYSTEMNAME}.run
+fi
+
+
+AGAIN=Y
+while [ $AGAIN = Y ]
+do
+    echo $ECHON "    System type (arch-vendor-os)? [default ${HOSTTYPE}] $ECHOC"
+    read PLATFORMIN
+    if [ X${PLATFORMIN}X != XX ]; then
+	PLATFORMCHK=`${SHELL} ./scripts/config.sub $PLATFORMIN 2>&1`
+	if [ $? -eq 0 ]; then
+	    HOSTTYPE=$PLATFORMCHK
+	    AGAIN=N
+	else
+	    echo "  ${PLATFORMCHK}"
+	fi
+    else
+	AGAIN=N
+    fi
+done
+
+ARCH=`echo ${HOSTTYPE} | sed 's/-.*-.*$//'`
+OSTYPE=`echo ${HOSTTYPE} | sed 's/^.*-.*-//'`
+
+echo $ECHON "    This machine's operating system? [default ${OSTYPE}] $ECHOC"
+read OSIN
+if [ X${OSIN}X != XX ]; then
+    OSTYPE=$OSIN
+fi
+
+echo $ECHON "    This machine's architecture? [default ${ARCH}] $ECHOC"
+read ARCHIN
+if [ X${ARCHIN}X != XX ]; then
+    ARCH=$ARCHIN
+fi
+
+OSROOT=`echo ${OSTYPE} sed 's/[0-9].*$//'`
+
+# Now setup counters; only on i386 (or i586...grr)!
+if [ $ARCH = i386 -o $ARCH = i586 ]; then
+    cat<<EOF
+
+Your architecture may support high-resolution cycle counters for accurate 
+timing. Currently, if you are running on an Intel Pentium or higher CPU,
+the cycle counter is available for use. If you are using such a platform,
+it is highly recommended that you enable use of the cycle counter.
+
+NOTE: if you wish to use the Pentium Pro configurable event counters,
+      please see the HBench-OS documentation for instructions.
+
+EOF
+    if [ $CYCLECOUNTER = YES ]; then
+	CYDEF=yes
+    else
+	CYDEF=no
+    fi
+
+    echo $ECHON "    Do you wish to enable the cyclecounter? [default $CYDEF] $ECHOC"
+    read YN
+    if [ X${YN}X != XX ]; then
+	case $YN in
+	    [Nn]*)	
+		CYCLECOUNTER=NO
+		;;
+	    [Yy]*)
+		CYCLECOUNTER=YES
+		;;
+	esac
+    fi
+
+# XXX should add automatic configuration of event counters
+else
+    CYCLECOUNTER=NO
+    EVENTCOUNTER1=""
+    EVENTCOUNTER2=""
+fi
+
+cat<<EOF
+
+HBench-OS determines what benchmarks to run by reading in a file that 
+specifies which benchmarks to include and what parameters to pass them.
+By default, the file ./conf/full.test is used, which runs the entire 
+HBench-OS benchmark suite. This is recommended for basic use; however,
+if you are interested is a specific set of benchmarks, create a new
+test file in the ./conf directory and enter its name below (without
+a directory specifier):
+
+EOF
+
+echo $ECHON "    Benchmark specifier file? [default ${TESTFILE}] $ECHOC"
+read TESTFILEIN
+if [ X${TESTFILEIN}X != XX ]; then
+    TESTFILE=${TESTFILEIN}
+fi
+
+cat<<EOF
+
+You may now select how many iterations of each benchmark test you want
+HBench-OS to make. Each iteration produces a separate data point; the
+data points for all iterations of a given benchmark are stored in one
+output file.
+
+The more iterations you select, the longer the benchmarks will run; however,
+more iterations provide more data and thus provide more statistically-
+accurate results.
+
+EOF
+
+AGAIN=Y
+while [ $AGAIN = Y ]; do
+    echo $ECHON "    Number of runs to execute? [default ${NRUNS}] $ECHOC"
+    read NRUNSIN
+    if [ X${NRUNSIN}X != XX ]; then
+	NRUNS=$NRUNSIN
+    fi
+
+    if [ ${NRUNS} -ge 1 ]; then
+	AGAIN=N
+    else
+	echo "  Number of runs must be greater than 0."
+	NRUNS=1
+    fi
+done
+
+cat<<EOF
+
+Next, we need to figure out where the benchmarks can put their temporary
+files. These places should be on a local disk partition running the file
+system you are interested in measuring, and not a ramdisk/mfs if possible.
+Ideally, the partition should have at least 16 MB free.
+
+EOF
+
+echo $ECHON "    Location for 16MB scratch file? [default ${SCRATCHFILE}] $ECHOC"
+read SFIN
+if [ X${SFIN}X != XX ]; then
+    SCRATCHFILE=$SFIN
+fi
+
+echo $ECHON "    Location for scratch directory? [default ${SCRATCHDIR}] $ECHOC"
+read SDIN
+if [ X${SDIN}X != XX ]; then
+    SCRATCHDIR=$SDIN
+fi
+
+# The following is commented out because we don't yet include lmdd in 
+# the benchmarks.
+#
+if [ 0 -eq 1 ]; then
+cat<<EOF
+
+For the disk benchmarks, we need to be able to read from a raw disk partition.
+If you enter "none" to the next question, no raw disk benchmarks will be
+performed. Note that the device given must be readable by the user running
+the benchmarks.
+
+EOF
+
+AGAIN=Y
+while [ $AGAIN = Y ]; do
+    echo $ECHON "    Raw disk partition to use? [default ${RAWDISK}] $ECHOC"
+    read RDIN
+    if [ X${RDIN}X != XX ]; then
+	RAWDISK=$RDIN
+    fi
+    if [ -c "$RAWDISK" -o $RAWDISK = none ]; then
+	AGAIN=N
+    else
+	echo "  $RAWDISK is not a raw disk device."
+	RAWDISK=none
+    fi
+done
+
+fi
+# end commented out section
+
+# Handle remote stuff
+cat<<EOF
+
+If you wish to the "remote" mode of the networking benchmarks, please 
+specify the hostnames of the remote systems below, separated by spaces.
+Enter "none" if you do not want any remote tests.
+
+The "remote" modes of these benchmarks (including bw_tcp, lat_tcp, lat_udp,
+lat_rpc, lat_connect) run and measure the clients locally, but execute
+the servers on a remote networked machine. Standard (non-counter-enabled)
+binaries for each remote machine's architecture MUST be available in the
+./bin directory for the remote tests to work. Also, note that, for best
+results, the remote machines should be identical to the local machine,
+and the network connecting them should be dedicated and quiescent.
+
+EOF
+
+AGAIN=Y
+while [ $AGAIN = Y ]; do
+    echo $ECHON "    Space-separated list of remote hosts? [default \"${REMOTE}\"] ${ECHOC}"
+    read REMOTEIN
+    
+    if [ "X${REMOTEIN}X" = XX ]; then
+	REMOTEIN=$REMOTE
+    fi
+
+    if [ "X${REMOTEIN}" = Xnone ]; then
+	REMOTEIN=""
+    fi
+
+    AGAIN=N
+    for r in $REMOTEIN; do
+	echo $ECHON "  Testing access to remote machine ${r}: $ECHOC"
+	FOO=`$RSH $r echo foo 2> /dev/null`
+	if [ X${FOO} = Xfoo ]; then
+	    echo "OK"
+	else
+	    echo "FAILED"
+	    AGAIN=Y
+	fi
+    done
+
+    if [ $AGAIN = Y ]; then
+	echo
+	echo "  Unable to access some remote machines using ${RSH}."
+	echo "  Please break out of this script to correct this problem, or"
+	echo "  reenter the hostnames below (enter \"none\" to cancel)."
+	echo
+    else
+	REMOTE=$REMOTEIN
+    fi
+done
+
+
+# Select result location
+cat <<EOF
+
+By default, HBench-OS places results in a subdirectory <hostname>.run#/
+of the base result directory. The default for the base run directory
+is ./Results/<os>-<arch>/, in this case ./Results/${OSTYPE}-${ARCH}/. If 
+you wish to alter the base directory location, enter the new directory now, 
+or just press Enter for the default:
+
+EOF
+
+echo $ECHON "    Alternate resultbase directory? [default ./Results/${OSTYPE}-${ARCH}] $ECHOC"
+read RDBIN
+if [ X${RDBIN}X != XX ]; then
+    RESULTDIRBASE=$RDBIN
+else
+    RESULTDIRBASE=xxNONExx
+fi
+
+# Pick a run filename
+RUNFILE=./conf/${SYSTEMNAME}.run
+cat <<EOF
+
+By default, HBench-OS selects a .run file based on the machine's hostname.
+Thus, we recommend that you select the default location for the .run file
+you have just specified (the default is ${RUNFILE}). However, if you
+wish to select an alternate location, enter it below:
+
+EOF
+
+echo $ECHON "    Run file to create/update? [default ${RUNFILE}] $ECHOC"
+read RUNFILEIN
+if [ X${RUNFILEIN}X != XX ]; then
+    RUNFILE=$RUNFILEIN
+fi
+
+cat<<EOF
+
+Finally, note that if you have not built the HBench-OS binaries for your
+architecture and counter selections in the default location 
+(./bin/${OSTYPE}-${ARCH}/), then you must edit the generated run file 
+manually to indicate where those binaries are.
+
+===========
+
+This completes the interactive setup procedure. Please confirm that you 
+wish to write your selections to the run file ${RUNFILE}:
+
+EOF
+
+echo $ECHON "    Confirm writing to ${RUNFILE}? [default yes] $ECHOC"
+read YN
+case $YN in
+    [Nn]*)	echo "Ok, no changes will be made to the run files. Exiting."
+		exit 0
+	;;
+    *)
+	;;
+esac
+
+echo
+echo $ECHON "Writing run file ${RUNFILE}...${ECHOC}"
+
+rm -f ${RUNFILE}
+touch $RUNFILE || (echo "!! Unable to write ${RUNFILE}! Aborting." && exit 1)
+
+CURDATE=`date`
+
+cat<<EOF > $RUNFILE
+# Run file for host: ${SYSTEMNAME}
+#
+# Automatically generated by interactive-setup version:
+#       \$Id: interactive-setup,v 1.9 1997/06/27 00:36:21 abrown Exp $
+# on ${CURDATE}.
+
+SYSTEMNAME=$SYSTEMNAME
+HOSTTYPE=$HOSTTYPE
+OSTYPE=$OSTYPE
+ARCH=$ARCH
+
+CYCLECOUNTER=$CYCLECOUNTER
+EVENTCOUNTER1="${EVENTCOUNTER1}"
+EVENTCOUNTER2="${EVENTCOUNTER2}"
+
+TESTFILE=$TESTFILE
+NRUNS=$NRUNS
+
+RAWDISK=$RAWDISK
+SCRATCHFILE=$SCRATCHFILE
+SCRATCHDIR=$SCRATCHDIR
+
+# Set the following variable to override auto-calculation of free phys. memory
+#FREEMB=8
+
+REMOTE="${REMOTE}"
+
+# Change the following settings to override location of binaries
+#PLAINBINDIR=\${HBENCHROOT}/bin/${OSTYPE}-${ARCH}
+#CYCLECOUNTERBINDIR=\${HBENCHROOT}/bin/${OSTYPE}-${ARCH}-c
+#EVENTCOUNTERBINDIR=\${HBENCHROOT}/bin/${OSTYPE}-${ARCH}-ec
+
+# The following, if set, overrides the result directory base pathname
+EOF
+
+if [ X$RESULTDIRBASE = XxxNONExx ]; then
+    echo "#RESULTDIRBASE=\${HBENCHROOT}/Results/${OSTYPE}-${ARCH}" >> $RUNFILE
+else
+    echo "RESULTDIRBASE=$RESULTDIRBASE" >> $RUNFILE
+fi
+
+echo >> $RUNFILE
+echo "# End of configuration file for host ${SYSTEMNAME}" >> $RUNFILE
+
+echo "done."
+
+exit 0

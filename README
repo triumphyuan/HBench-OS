@@ -1,0 +1,201 @@
+Welcome to HBench-OS 1.0!
+
+This file is a brief guide to the HBench-OS operating system
+benchmarking suite, and contains both pointers to further information
+about HBench-OS as well as important copyright and licensing
+information. Please read it through completely before using the
+HBench-OS benchmarks.
+
+If you have any questions or comments that are not addressed either in
+this file or the accompanying documentation, please send them to
+the author of HBench-OS, Aaron Brown (abrown@eecs.harvard.edu), or the
+current maintainer (reachable at hbench@eecs.harvard.edu).
+If you would like to share your results, please mail
+them to hbench-results@eecs.harvard.edu. 
+
+WHAT IS HBENCH-OS?
+------------------
+HBench-OS is a suite of portable benchmarks designed to measure the
+performance of primitive functionality provided by an operating
+system/hardware platform. HBench-OS was designed primarily as a
+research tool for the systems research and OS development communities,
+and thus its major design goal is to provide a flexible system for
+reproducible, accurate, and statistically-sound performance analysis
+and evaluation. These characteristics make it ideal for both
+performance research as well as more traditional consumer-oriented
+performance measurement and analysis.
+
+HBench-OS's features include:
+	* a broad range of benchmarks, covering hardware capabilities,
+	  low-level OS abstractions, and high-level OS primitives
+	* an accurate timing system that automatically measures and
+	  removes its own overhead
+	* most benchmarks dynamically determine how long to run to overcome
+	  low timing resolution
+	* all benchmark data is preserved for analysis
+	* support for user-defined statistical analysis policies,
+	  including viewing raw data distributions
+	* rudimentary automatic analysis of benchmark data
+	* support for obtaining cold-cache results (no loops) when
+	  timing resolution is high enough
+	* a flexible control system that allows you to configure exactly
+	  which benchmarks are executed (and their parameters) in a
+	  given run
+	* built-in support for multiple benchmarking runs, including
+	  statistical processing across multiple runs
+	* a machine-independent framework that supports high-resolution
+	  timing via hardware cycle counters 
+	  (currently supports Intel Pentium and later chips)
+	* a machine-independent framework to support hardware event
+	  counters for detailed profiling of the benchmark tests
+	  (currently supports Intel Pentium Pro under modified 
+	  NetBSD/i386 only)
+
+If you would like to share your results, please mail
+them to hbench-results@eecs.harvard.edu. 
+
+HBench-OS has its roots in Larry McVoy's lmbench1.1 package, but has
+diverged significantly from that original base. See the section below
+entitled "HBench-OS and lmbench" for a discussion of how HBench-OS's
+philosophy differs from that promulgated by lmbench, and how the
+benchmark tests have been expanded and enhanced relative to those in
+lmbench1.1.
+
+BUILDING & RUNNING HBENCH-OS
+----------------------------
+Full details on compiling, configuring, customizing, and running
+HBench-OS can be found in the file "doc/using-hbench". 
+
+If you want to get HBench-OS up and running quickly with its default
+configuration, see the instructions in the file "USING" in this
+directory. We still recommend that you read the files in the doc
+directory so that you understand the range of possible configuration
+options that HBench-OS offers.
+
+ABOUT THE BENCHMARKS
+--------------------
+Detailed information on each of the benchmarks, including what they
+measure and what each parameter does, is available in the file
+"doc/benchmark-descriptions". We recommend that you read this file
+before customizing the selection of benchmarks to be included in a
+run, and before attempting to analyze the data produced by a benchmark.
+
+ABOUT THE RESULTS
+-----------------
+The HBench-OS package includes several scripts to help reduce and
+process the mass of data produced by the full set of benchmark
+tests. These scripts, as well as the standard analysis policies used
+by HBench-OS, are described in the file "doc/interpreting-results".
+
+DATABASE OF COLLECTED RESULTS
+-----------------------------
+We are building a publicly-accessible master database of HBench-OS
+results, available at http://www.eecs.harvard.edu/vino/perf/hbench/. 
+We would appreciate any contributions for this database, especially if
+they include results for machines and operating systems that are not
+yet in the database. If you would be interested in contributing to
+this database, please send any results that you acquire with HBench-OS
+to hbench@eecs.harvard.edu in the form of a tar file of the appropriate
+results directory.
+
+HBENCH-OS AND LMBENCH
+---------------------
+HBench-OS and Larry McVoy's lmbench offer two different approaches to
+operating system benchmarking. Although HBench-OS has its roots in
+lmbench, it has diverged significantly in both philosophy and in the
+benchmark code itself.
+
+HBench-OS's philosophy toward measurement is to provide maximum
+flexibility, detail and reproducibility for the researcher or
+developer. Thus HBench-OS provides a configurable run system that
+allows for easy selection of individual benchmarks; its benchmark
+tests preserve all of the data they acquire, allowing the user to make
+his or her own decisions about which data are important and which can
+be reduced via statistics; and it provides a great deal of flexibility
+in choosing benchmark parameters so that it is useful for both a broad
+profile of a system as well as detailed study of a small subset of
+system functionality. Additionally, HBench-OS's benchmarks have been
+written to be self-consistent and reproducible, a necessary condition if
+the benchmarks are to be used as the foundation of a sophisticated
+performance analysis methodology. One example of such a methodology,
+one that relies on the unique properties of HBench-OS, is described in
+the SIGMETRICS '97 paper found in the doc subdirectory of this
+distribution (doc/sigmetrics97-paper.ps.gz). This paper also details
+some of the weaknesses in lmbench and the changes between lmbench and
+HBench-OS.
+
+HBench-OS has explicitly *not* been designed for blanket comparisons
+of wildly-divergent hardware and OS platforms. You might notice that
+it does not provide a script to compare selected results on all the
+tested machines, as does lmbench. We feel that such comparisons are,
+more often than not, misleading and prone to producing false
+conclusions. HBench-OS is much more suited for use as a tool for
+*understanding* system performance through detailed analysis, and its
+design goals and structure represent this bias.
+
+You might find that in many cases the HBench-OS benchmarks report the
+same or similar values as do the lmbench benchmarks. This should not
+be surprising; the lmbench benchmarks are still quite good, and the OS
+and hardware functionality measured by both benchmark suites overlaps
+considerably. In these cases, however, HBench-OS still offers what
+lmbench does not: preservation of all data, user-definable data
+reduction policies, simple automatic analysis, and the consistency and
+structure that guarantee that the result is useful and correct.
+
+Finally, the following is a list of the most significant changes that
+distinguish HBench-OS from lmbench; more details are available in the
+paper in doc/sigmetrics97-paper.ps.gz:
+
+	* Several bugfixes, including significant fixes to bw_file_rd
+	  and lat_ctx.
+	* Expanded repertoire of benchmarks, including L1/L2 cache
+	  bandwidths, more system call measurements, and variable
+	  transfer buffer sizes in bulk data transfer tests.
+	* Vastly more flexible data acquisition and analysis.
+	* All result data is preserved for off-line analysis via
+	  built-in or user-defined data reduction policies.
+	* More rigorous statistical treatment of data.
+	* Benchmarks restructured for internal and inter-benchmark
+	  consistency.
+	* Dynamic benchmark sizing to overcome low timing resolution.
+	* Support for hardware cycle counters and event counters in a
+	  machine-independent framework (although currently
+	  implemented only for Intel Pentium and later architectures)
+
+COPYRIGHT AND LICENSING INFORMATION
+-----------------------------------
+All files, source code, programs, scripts and documentation included
+in the HBench-OS package are:
+
+Copyright (c) 1997 The President and Fellows of Harvard College.
+All rights reserved.
+Copyright (c) 1997 Aaron B. Brown.
+Portions copyright (c) 1994, 1995 Larry McVoy.
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation (either version 2 of the License, or
+  (at your option) any later version), with the following additional
+  restriction, which overrides any conflicting restrictions in the
+  GPL:
+
+        These unmodified benchmarks, and any results obtained through their
+        use, may not be described in any public forum or publication
+        under any name other than "HBench-OS", unless an exemption is
+        explicitly granted by either Aaron Brown or Margo Seltzer.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program, in the file COPYING in this distribution;
+  if not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+  Cambridge, MA 02139, USA.
+
+This work is derived from, but can no longer be called, lmbench.
+
+We also request that if you have any fixes or enhancements to the benchmarks
+that you mail them to the current maintainer of HBench-OS at
+hbench@eecs.harvard.edu, or to the author at abrown@eecs.harvard.edu.

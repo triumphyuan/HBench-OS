@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Mhz for irix - more accurate
+# $Id: mhz.irix,v 1.3 1994/12/09 19:50:29 lm Exp $
+
+if [ X$1 = X-c ]
+then    CLOCK=1
+else    CLOCK=0
+fi
+set `hinv | grep MHZ | head -1`
+
+bc << EOF > /tmp/mhz
+scale = 4
+1000/$2
+EOF
+if [ $CLOCK -eq 0 ]
+then	echo $2 Mhz, `cat /tmp/mhz` nanosec clock
+else	cat /tmp/mhz
+fi
+rm /tmp/mhz

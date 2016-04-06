@@ -1,0 +1,374 @@
+$Id: benchmark-descriptions,v 1.2 1997/06/28 03:49:12 abrown Exp $
+
+This file is your guide to the individual benchmarks in the HBench-OS
+suite. Each benchmark is listed here (in alphabetical order) along
+with a brief description of what it measures and what its parameters
+are.
+
+Note that the parameters listed are only the parameters that should be
+placed in the test-file configuration file. If you run a benchmark
+binary manually, some additional parameters may be required.
+
+Note also that most parameters specifying memory size can be specified
+either in bytes, kilobytes, or megabytes by appending no suffix, the
+suffix "k", or the suffix "m", respectively, to the integer size.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_bzero -- Memory libc-bzero Bandwidth
+
+    Description:
+	This test measures the attainable write bandwidth to memory
+	when the OS's libc bzero() (or memset()) routine is used 
+	to write to memory.
+
+    Parameters:
+	1) the size of the memory buffer to bzero()
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_file_rd -- File Reread Bandwidth
+
+    Description:
+	This test measures the bandwidth attainable when reading from
+	a file that is already cached in the file system buffer cache,
+	using the system's standard read() system call. The data is
+	read in units of the transfer buffer size, parameter #2 below.
+
+    Parameters:
+	1) amount of data to read from the file
+	2) size of the transfer buffer used to read the data.
+
+    Notes:
+	This test runs only one iteration, so if you have
+	low-resolution clocks (for example under Digital UNIX), make
+	sure to use a large value for the first parameter to increase
+	the running time.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_mem_cp -- Memory Copy Bandwidth
+
+    Description:
+	This test measures the bandwidth attainable when copying
+	data between two buffers in memory, either with the OS's libc
+	bcopy() or memcpy() function or an unrolled loop.
+
+    Parameters:
+	1) the size of the memory buffer to copy
+	2) [libc | unrolled] -- select between the OS's built-in libc
+	                        copy routine, or choose an unrolled loop
+	3) [aligned | unaligned] -- control whether the two buffers
+				    are page-aligned or displaced relative
+				    to each other
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_mem_rd -- Memory Read Bandwidth
+
+    Description:
+	This test measures the attainable raw read bandwidth from
+	memory when the memory is accessed through an unrolled loop of
+	accesses using array-offset addressing. It includes the cost
+	of performing one add operation per word of data read.
+
+    Parameters:
+	1) the size of the memory buffer to read
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_mem_wr -- Memory Write Bandwidth
+
+    Description:
+	This test measures the attainable raw write bandwidth from
+	memory when the memory is accessed through an unrolled loop of
+	accesses using array-offset addressing. It includes the cost
+	of performing one add operation per word of data written.
+
+    Parameters:
+	1) the size of the memory buffer to write
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_mmap_rd -- Read Bandwidth from an mmap()'d File
+
+    Description:
+	This test measures the attainable bandwidth when reading from
+	a file that has been freshly mmap'd into memory, but not yet
+	touched. The file is pre-read so as to be in the virtual
+	memory system's page cache. It thus can be used as an indirect
+	measure of the virtual memory system overhead (see the
+	automatic analysis generated after an HBench-OS run for an
+	example).
+
+    Parameters:
+	1) amount of data to read from the mmap'd file
+
+    Notes:
+	This test runs only one iteration, so if you have
+	low-resolution clocks (for example under Digital UNIX), make
+	sure to use a large value for the first parameter to increase
+	the running time.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_pipe -- Pipe Bandwidth
+
+    Description:
+	This test measures the bandwidth attainable when transferring
+	data through a pipe between two processes. The data is
+	transferred in units of the transfer buffer size, parameter #1
+	below.
+
+    Parameters:
+	1) size of transfer buffer to use when transferring data
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+bw_tcp -- TCP Bandwidth
+
+    Description:
+	This test measures the bandwidth attainable when transferring
+	data through a TCP connection between two processes. The data is
+	transferred in units of the transfer buffer size, parameter #1
+	below.
+
+    Parameters:
+	1) size of transfer buffer to use when transferring data
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_connect -- TCP Connection Latency
+
+    Description:
+	This test measures the latency in establishing a TCP
+	connection to either the local machine or a remote
+	machine. The TCP connection latency is defined to be the time
+	it takes to execute the connect() system call.
+
+    Parameters:
+	none.
+
+    Notes:
+	This test runs only one iteration, so if you have
+	low-resolution clocks (for example under Digital UNIX), you
+	cannot use this test successfully.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_ctx -- Basic Context Switch Latency
+
+    Description:
+	This test measures context switch latency by passing a token
+	around a series of pipes connecting different processes. In
+	this test, we define context switch latency to be the time
+	that it takes the system to switch hardware contexts and to
+	update hardware TLBs, etc. We specifically exclude any latency
+	due to satisfying cache conflict misses that are artifacts of
+	the context switch; see lat_ctx2, below, for a similar
+	benchmark that includes cache conflict resolution time.
+
+    Parameters:
+	1) size of memory footprint of test processes
+	2) number of processes to run simultaneously
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_ctx2 -- Context Switch Latency with Cache Conflict Overhead
+
+    Description:
+	This test is the same as lat_ctx, except that it does not
+	factor out the overhead introduced by cache conflicts between
+	the memory footprints of the test processes.
+
+    Parameters:
+	1) size of memory footprint of test processes
+	2) number of processes to run simultaneously
+
+    Notes:
+	This test often has extremely high variance in the results.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_fs -- File System Metadata Operation Latency
+
+    Description:
+	This test measures the latency of performing certain file
+	system metadata operations, in particular creates and
+	deletes. The order in which the operations is performed can be
+	varied to understand how ordering affects performance.
+
+    Parameters:
+	1) the type of operation to perform. Options are:
+		create  -- create files
+		delforw -- delete files in the order they were created
+		delrev  -- delete files in reverse order of their creation
+		delrand -- delete files in pseudo-random order
+	2) the size of the test files
+
+    Notes:
+	This test uses the scratch directory specified in the
+	automatic configuration stage or run file, so ensure that this
+	directory uses the file system of interest.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_fslayer -- Latency of the OS's File System Layer (VFS layer)
+
+    Description:
+	This test measures the time that it takes to reach the OS's
+	file system functionality. In systems based on the vnode/VFS
+	framework, this test approximately measures the overhead of
+	the vnode/VFS layer. It does this by writing one byte of
+	data to /dev/null. 
+
+    Parameters:
+	none.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_mem_rd -- Memory Read Latency
+
+    Description:
+	This test measures the read access time of each layer of the
+	memory hierarchy. The data produced by this test, when plotted
+	by the gen-latgraph script (see "interpreting-results" in this
+	directory), creates a profile of the salient features of the
+	test machine's memory subsystem.
+
+	The test works by walking through memory, touching a byte of
+	data every stride_size bytes.
+
+    Parameters:
+	1) the stride size
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_mmap -- mmap() Latency
+
+    Description:
+	This test measures the latency of creating a mapping for a
+	memory-mapped file. It does this by measuring the time to map
+	in a cached file via the mmap() system call.
+
+    Parameters:
+	1) the size of the region to map
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_pipe -- Pipe Transfer Latency
+
+    Description:
+	This test measures the latency of passing data through a
+	pipe. It measures the amount of time it takes to ping-pong a
+	one-byte token through a pipe between two processes.
+
+    Parameters:
+	none.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_proc -- Process Creation Latency
+
+    Description:
+	This test measures the latency of creating several types of
+	processes, including via fork(), fork()+exec(), and /bin/sh.
+
+    Parameters:
+	1) type of process creation. Select from:
+		null   -- a simple fork() of the current process
+		simple -- a fork() of the current process plus an
+			  exec() of hello-world
+		sh     -- execution of hello-world through the libc
+			  system() interface, which uses /bin/sh to
+			  invoke hello-world
+	2) type of linking for hello-world. Select from:
+		static  -- hello-world is statically-linked
+		dynamic -- hello-world is dynamically-linked
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_rpc -- RPC Latency
+
+    Description:
+	This test measures the latency of RPC calls via UDP or TCP
+	transports. 
+
+    Parameters:
+	1) transport type. Choose "udp" or "tcp"
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_sig -- Signal Handler Latency
+
+    Description:
+	This test measures signal handler latency, both for installing
+	a new signal handler and for actually handling raised signals.
+
+    Parameters:
+	1) either "install" to measure installation latency, or
+	   "handle" to measure signal-handling latency.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_syscall -- Various System Call Latencies
+
+    Description:
+	This test measures the latency of several different system
+	calls. Most of these system calls are chosen to represent
+	small amounts of functionality, in the hopes of determining
+	the "null" system call time on a given system.
+
+    Parameters:
+	1) system call to measure. Choose one of:
+		sigaction
+		gettimeofday
+		sbrk
+		getrusage
+		write
+		getpid
+
+    Notes:
+	Some of the above system calls may be cached by libc, and thus
+	the calls will not result in true system calls. We recommend
+	running a system-call tracing program alongside this benchmark
+	to verify any results that appear too fast to be a system call.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_tcp -- TCP Transaction Latency
+
+    Description:
+	This test measures the latency of a 1-byte ping-pong between
+	two processes connected via a TCP connection.
+
+    Parameters:
+	none.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+lat_udp -- UDP Transaction Latency
+
+    Description:
+	This test measures the latency of a integer ping-pong between
+	two processes using UDP datagrams to transfer the integer token.
+
+    Parameters:
+	none.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+COPYRIGHT
+---------
+This documentation is:
+
+Copyright (c) 1997 The President and Fellows of Harvard College.
+All Rights Reserved.
+Copyright (c) 1997 Aaron B. Brown.
+
+QUESTIONS/COMMENTS/BUGFIXES
+---------------------------
+If you have any questions, comments, or bug reports about this
+documentation or HBench-OS, please send them to the author, Aaron
+Brown, at abrown@eecs.harvard.edu, or the HBench-OS maintainer,
+reachable at hbench@eecs.harvard.edu.

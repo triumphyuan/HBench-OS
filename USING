@@ -1,0 +1,61 @@
+INTRODUCTION
+------------
+This file is intended to provide a quick-start guide to building and
+running the HBench-OS benchmarks.
+
+Full documentation on using and running HBench-OS can be found in the
+doc subdirectory, in the file "using-hbench".
+
+TESTED PLATFORMS
+----------------
+HBench-OS has been tested on the following operating system platforms:
+        AIX 4.1.4
+        BSD/OS 2.1
+        FreeBSD 2.2.2
+        NetBSD 1.2 (i386, sparc)
+        Digital UNIX 3.2
+        HP-UX 9.05, 10.10
+        IRIX 5.2
+        Linux (i386, alpha)
+        Solaris 2.5 (sparc)
+        SunOS 4.1.3C
+
+and should run without modification on other versions of those
+operating systems and on similar platforms.
+
+If your desired test platform is not listed above, HBench-OS may still
+work. Try the procedure below; if necessary, add any special libraries
+or CFLAGS to the OS configuration section of src/Makefile to get the
+tests to build. If you get HBench-OS to work on an OS that is not
+listed above, please send mail to hbench@eecs.harvard.edu with the
+changes you had to make to get it to work, and they will be
+incorporated into future HBench-OS releases.
+
+BUILDING & RUNNING HBENCH-OS
+----------------------------
+To build and run HBench-OS with the default options for your test
+platform, follow the following steps:
+
+        1) From the root directory of the distribution ("hbench-OS/"),
+           type "make". This will build the binaries needed to run
+           HBench-OS on your architecture and OS.
+        2) Run "make setup", and answer the questions presented by the
+           interactive setup program. This will generate a run
+           configuration file in ./conf/<hostname>.run.
+        3) Type "make run" to start the benchmark run. 
+           To obtain meaningful results, the test machine should be 
+           completely idle while the tests are running. The tests will
+           run for about 30 to 60 minutes per iteration, depending on
+           the speed of the test machine (the number of iterations is
+           set during the "make setup" phase). The first iteration
+	   requires an extra 20 to 40 minutes for dynamic benchmark
+	   sizing.
+        4) Once the run has completed, you can find the results of the
+           benchmarks in Results/<os>-<arch>/<hostname>/. The "summary" 
+           and "analysis" files in that directory provide a useful
+           starting point for analyzing the raw data.
+
+See the files "benchmark-descriptions" and "interpreting-results" in
+the doc subdirectory of this distribution for more information both on
+what each test is measuring and on using and interpreting the
+HBench-OS results.

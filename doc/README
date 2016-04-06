@@ -1,0 +1,31 @@
+This directory contains documentation for HBench-OS:
+
+        README:                 this file
+        using-hbench:           how to build, configure, and run HBench-OS
+        benchmark-descriptions: descriptions of each of the benchmark tests,
+                                what they measure, and what the arguments
+                                to each test are
+        interpreting-results:   how to use the supplied analysis scripts
+                                to analyze and interpret the HBench-OS
+                                results.
+        sigmetrics97-paper.ps:  a paper presented at SIGMETRICS '97 on
+                                HBench-OS and a proposed methodology for
+                                using HBench-OS to understand OS performance
+
+Further information on HBench-OS, including a case study of OS performance
+using HBench-OS, can be found at:
+
+        http://www.eecs.harvard.edu/vino/perf/hbench/
+
+or in the SIGMETRICS paper.
+
+Note that the full citation for the SIGMETRICS paper is:
+
+        Brown, A., and Seltzer, M. "Operating System Benchmarking in the
+        Wake of Lmbench: A Case Study of the Performance of NetBSD on the 
+        Intel x86 Architecture." Proceedings of the 1997 ACM SIGMETRICS 
+        Conference on Measurement and Modeling of Computer Systems, 
+        Seattle, WA, June 1997.
+
+--
+Aaron Brown <abrown@eecs.harvard.edu>

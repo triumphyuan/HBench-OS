@@ -1,0 +1,342 @@
+$Id: using-hbench,v 1.4 1997/06/28 03:50:36 abrown Exp $
+
+INTRODUCTION
+------------
+This file is your guide to building, configuring, and running
+HBench-OS. It includes information on how to compile the benchmarks,
+how to set the various configuration parameters (including cycle or
+event counter support and cold-cache measurement options), how to
+enable or disable specific benchmark tests, and how to run the tests.
+
+For a quick-start guide to running HBench-OS with the default
+settings, see the file "USING" in the root directory of this
+distribution.
+
+PLATFORMS, OS's AND ARCHITECTURES
+---------------------------------
+HBench-OS identifies each platform on which it is run by a
+GNU-autoconf-style platform identifier. These identifiers have three
+components separated by hyphens, and are of the form
+"<arch>-<vendor>-<os>", where <arch> is the CPU architecture (e.g.,
+i386, sparc, mips, m68k), <vendor> is the maker of the machine (if
+known), and <os> is the full operating system version (e.g, solaris2.5
+or freebsd2.2.2).
+
+HBench-OS uses the first and last components of the platform
+identifier, i.e., <os>-<arch>, to distinguish between
+binary-compatible platforms. It will thus build a separate set of
+binaries for each combination of <os>-<arch> it is run on, and results
+are divided up into subdirectories with each unique <os>-<arch>
+becoming its own directory. Although this methodology can result in
+multiple binary sets for slightly different but compatible
+architecture/OS pairs, it guarantees that each binary set is optimized
+for its target architecture.
+
+The platform identifier for your machine is detected by the
+"config.guess" script in the scripts subdirectory of the HBench-OS
+distribution. This script is a slightly modified version of the one
+shipped with GNU autoconf. If it does not correctly detect your test
+platform, the automatic build and run process will fail; if you find a
+platform that is not correctly identified, send mail to the HBench-OS
+author, Aaron Brown, at abrown@eecs.harvard.edu with full details on
+the machine.
+
+BUILDING HBENCH-OS
+------------------
+Building HBench-OS with its default options is easy: just run "make"
+from the root directory of the HBench-OS distribution. This will build
+the standard, complete set of HBench-OS benchmarks, and, if supported
+by your architecture, a set of cyclecounter-enabled benchmark binaries.
+Alternatively, you can run make from the "src" subdirectory, but this
+will only build the standard set of binaries.
+
+To build HBench-OS with support for timing via high-resolution
+hardware cycle counters, run "make cyclecounter" from the src
+subdirectory. This option is currently only supported with the gcc
+compiler on Intel Pentium or later architectures.
+
+To build HBench-OS with support for the hardware event counters on the
+Intel Pentium or Pentium Pro, run "make eventcountersP5" or "make
+eventcountersP6" from the src directory. See the section below on
+using the event counters for more details.
+
+Binaries will be placed by default in one of three locations. In the
+normal case, binaries go to the bin/<os>-<arch>/ subdirectory of the
+HBench-OS root. For example, on the platform sparc-sun-netbsd1.2G,
+binaries go to hbench-OS/bin/netbsd1.2G-sparc/. If the
+cyclecounter-enabled binaries are selected, they go to
+bin/<os>-<arch>-c/. If eventcounter-enabled binaries are built, they
+go to bin/<os>-<arch>-ec/.
+
+If you intend to run the networking tests between two non-identical
+systems over the network, you must ensure that the driver system (the
+one running the benchmark suite) has binaries available for the
+<os>-<arch> of the remote system. For example, if the driver system
+runs linux-i386 and the remote system runs solaris2.5-sparc, then
+there must be linux-i386 binaries in bin/linux-i386/ and
+solaris2.5-sparc binaries in bin/solaris2.5-sparc in order for the
+remote tests to run correctly.
+
+If you want the binaries to go to a non-standard location, edit the
+build rules for "all", "cyclecounter", and/or "eventcounters*" in
+src/Makefile to point $(BINDIR) to the desired location.
+
+IF THE BUILD FAILS
+------------------
+During the build, you may see several warning messages, especially if
+you are using a picky compiler. These can be safely ignored.
+
+If the build fails, it is most likely for one of the following
+reasons:
+	1) your platform type was not recognized by config.guess
+	2) the benchmarks are incompatible with your system's compiler
+	3) the benchmarks are incompatible with your system's C libraries.
+
+In the first case, try modifying config.guess to correctly recognize
+your system type, or manually set the PLATFORM, ARCH, OS, and OSROOT
+variables in src/Makefile.
+
+In the second case, try compiling the benchmarks with GNU C (gcc).
+
+In the third case, first see if any link-time errors can be resolved
+by adding libraries ("-lxxx") to the standard CFLAGS. If this solves
+the problem, create a new target in src/Makefile for your OS and add
+the libraries to it (see the solaris target as an example). Otherwise,
+send the full error output along with a complete description of your
+platform to abrown@eecs.harvard.edu and I'll see what I can do.
+
+In all cases, if you find a way to fix the benchmarks, please send the
+patches back to abrown@eecs.harvard.edu so they can be incorporated into
+the next release. If you can't fix the benchmarks, send a complete
+list of all errors encountered plus full system details to the same
+address and I'll see what I can do.
+
+BUILDING FOR COLD-CACHE MEASUREMENTS
+------------------------------------
+Most of the HBench-OS benchmarks have support for taking cold-cache
+measurements: the primitive being measured is only run once, instead
+of in a loop. The results produced by the cold-cache version of the
+benchmarks can potentially be more representative of the performance
+that would be seen by certain applications, but this depends on how
+the application uses the primitive.
+
+Cold-cache support is only available with high-resolution
+timing. Currently, to support cold-cache measurement of memory
+bandwidths, the timer resolution must be approximately 100ns or
+better. Since this is only currently attainable via hardware
+cyclecounters, cold-cache support is only available when the cycle
+counter support is enabled.
+
+To build cold-cache-enabled benchmarks, add "-DCOLD_CACHE" to the
+CFLAGS in src/Makefile.
+
+Note that all caches are used cold in the cold-cache benchmarks, even
+the file system and buffer caches, so tests involving file system or
+VM system access may run significantly more slowly than in the
+warm-cache case.
+
+CONFIGURING HBENCH-OS
+---------------------
+
+** Configuration Files
+
+For maximum flexibility, HBench-OS relies on two configuration files
+to drive the benchmarking procedure. The first of these files is a
+"test file", which selects the benchmarks to be included in the run;
+the second is a "run file" that identifies the run, provides
+information about the test machine, and points to the test file to be
+used. Both configuration files are typically placed in the "conf"
+subdirectory of the HBench-OS distribution.
+
+The use of two files allows you to set up a standard set of tests in
+the test file, and then produce several run files, one for each
+machine or configuration, that refer back to that same test file.
+
+** Test Files
+
+The test file follows a simple format. Blank lines and lines beginning
+with a pound sign ('#') are ignored. Each remaining line specifies one
+benchmark to run and the parameters that should be used. These lines
+are in the form:
+
+	benchmark_name:params1:params2:...:paramsN
+
+where benchmark_name is the name of the executable that implements the
+benchmark, and each of the paramsK contains the (space-separated)
+parameters for the Kth invocation of that benchmark. For example, to
+measure process creation latencies for both simple static and simple
+dynamic processes, you could put the following line in the test file:
+
+	lat_proc:simple static:simple dynamic
+
+Note that there is never a trailing colon (':'), even if the benchmark
+takes no parameters.
+
+For more information on each benchmark and its parameters, see the
+file "benchmark-descriptions" in this directory.
+
+There is one test file supplied with HBench-OS, as
+conf/full.test. This file contains all of the HBench-OS benchmarks
+with a wide range of parameters. This is the test file used by
+default, but it can be easily replaced by means of the run file,
+described below.
+
+** Run Files
+
+Each benchmarking run is described by a run file. By default, the run
+file is stored in the conf directory, and is called "<hostname>.run",
+where hostname is the hostname of the test machine. Run files can be
+differently-named, although in that case the benchmarks must be
+started manually (see "Running the Benchmarks", below).
+
+Run files describe the test system as well as the parameters of the
+benchmark run. A run file identifies the name, platform, architecture,
+and OS of the test machine, selects what kind of timing is to be used
+(standard, cyclecounter, eventcounter), selects a test file to be
+used, selects the number of times to run each benchmark, contains
+information about where scratch files can be put on the test machine,
+selects remote hosts for the remote network benchmarks, and allows the
+default result and binary directories to be overridden.
+
+The format of a run file is the same as a /bin/sh shell script (the
+run file is pulled into the driver script as-is), and thus all
+configuration is done via shell variables. Thus each configuration
+option is set via a line similar to the following:
+
+	OPTION=value
+
+Lines beginning with a pound sign ('#') are ignored.
+
+Typically, run files should be automatically generated by the
+automatic setup script. However, if you wish to customize the run
+manually (e.g., to change the name of the run file and the output
+directory from the default of <hostname>), you can edit the run file
+manually. See the file sample.run in the conf directory for the format
+of the run file.
+
+** Automatic Setup and Generation of Run Files
+
+HBench-OS includes an automatic, interactive configuration script that
+will generate an appropriate run file when executed on the test
+machine. This is the recommended method of creating a run file.
+
+To run the automatic setup, simply type "make setup" in the HBench-OS
+root directory, and follow the interactive prompts. This setup script
+will generate a run file as "conf/<hostname>.run", where <hostname> is
+the first component of the test machine's hostname.
+
+There is no support for automatic or interactive generation of test
+files; this is best done by copying conf/full.test to a new file and
+editing it manually, using the documentation file
+"doc/benchmark-descriptions" as a guide to the tests.
+
+RUNNING THE BENCHMARKS
+----------------------
+The HBench-OS benchmarks are run via a master driver script that
+performs the necessary setup, processing, and cleanup needed to
+properly run the benchmarks. The driver script (in scripts/maindriver)
+reads in a run file (and then the test file pointed to by the run
+file) to configure itself for the benchmark run.
+
+The easiest way to invoke the driver script and start the benchmark
+run is to simply type "make run" from the HBench-OS root directory. If
+the appropriate run file is available in conf/<hostname>.run, then
+this simple method will work.
+
+If you've renamed the run file or customized its location, then the
+simple "make run" invocation will not work. Instead, you must manually
+invoke hbench-OS/scripts/maindriver, passing the path to the run file
+as the first and only parameter.
+
+Once the driver script is invoked either by "make run" or manually,
+the benchmarks will run to completion automatically. The progress of
+the tests will be displayed on-screen as they run.
+
+To produce accurate results, we strongly recommend that the test
+system be completely idle while running the benchmarks. If possible
+(and you aren't doing remote network testing), disconnect the test
+machine from the network while the benchmarks are running. We also
+recommend using a large number of iterations of the tests if time
+constraints allow it; we've found 50 iterations to provide adequate
+data for later statistical analysis.
+
+The running time of the benchmarks depends somewhat on the speed of
+the test machine (although most of this is normalized away in the
+auto-sizing of the benchmarks), the number of iterations selected, and
+the benchmarks included. A full run using the supplied conf/full.test
+test file takes approximately 30-60 minutes per iteration, plus a
+startup cost of 40-80 minutes (to dynamically calculate the benchmark
+sizes for later iterations). As an example, on a 200MHz Pentium Pro
+running FreeBSD, five iterations of full.test took approximately five
+hours to complete.
+
+Once the run is complete, the driver script attempts to auto-generate
+a summary and brief analysis of the results. These tasks require that
+perl5 be installed an accessible as "perl" in the path; if this is not
+the case, the driver script will produce an error but continue
+running. The analysis and summary can be regenerated later by running
+"make analyses" or "make summaries" from the Results directory (see
+the file "interpreting-results" in this directory for more
+information).
+
+When the driver script exits, the results from the run can be found in
+	hbench-OS/Results/<os>-<arch>/<hostname><.N>/*
+where <os> is the full OS version of the test machine, <arch> is the
+architecture of the test machine, <hostname> is the hostname of the
+test machine, and <.N> is either not present (if this is the first run
+on the test machine), or a generation number indicating how many times
+the driver script has been invoked. For information on the format of
+the results and how to interpret them, see the file
+"interpreting-results" in this directory.
+
+Note that the number of iterations you select in the automatic setup
+or in the run file refers to how many times each benchmark is run
+within one "benchmark run", i.e. invocation of the driver script. The
+<.N> suffix on the result directory refers to the number of times that
+a "benchmark run" has been invoked. Thus, if the run file specifies 50
+iterations, there will still only be one result directory generated
+(with 50 datapoints for each benchmark).
+
+USING EVENT COUNTERS
+--------------------
+HBench-OS has a machine-independent framework for using configurable
+hardware event counters to profile the benchmarks. Currently, event
+counters are supported on the Intel Pentium Pro with a modified
+NetBSD/i386 kernel only (since using event counters requires kernel
+support). To use the counters on this class of machine:
+	1) Build the benchmarks using "make eventcountersP6" in the
+	   src directory
+	2) Download the NetBSD kernel patches for Pentium Pro counter
+	   support from the HBench-OS web page and install them.
+	   (http://www.eecs.harvard.edu/vino/perf/hbench/)
+	3) Rebuild the NetBSD kernel to support Pentium Pro counters
+	   and install it
+	4) In the run file, edit the EVENTCOUNTER1 and EVENTCOUNTER2 
+	   variables to specify the counters that you wish to use
+	   (e.g., EVENTCOUNTER1="0x79").
+	5) Run the tests as usual.
+	6) Each output file in the results directory will now contain
+	   three or four data points per line instead of the usual
+	   one. The first is the standard benchmark output; the second
+	   (if present) is the number of bytes transferred (since the
+	   event counter values are not normalized in the bandwidth
+	   tests); the third is the value of the first event counter;
+	   and the fourth is the value of the second event counter.
+
+If you have further questions on using the event counters, send mail
+to the HBench-OS author at abrown@eecs.harvard.edu.
+
+COPYRIGHT
+---------
+This documentation is:
+
+Copyright (c) 1997 The President and Fellows of Harvard College.
+All Rights Reserved.
+Copyright (c) 1997 Aaron B. Brown.
+
+QUESTIONS/COMMENTS/BUGFIXES
+---------------------------
+If you have any questions, comments, or bug reports about this
+documentation or HBench-OS, please send them to the author, Aaron
+Brown, at abrown@eecs.harvard.edu, or the HBench-OS maintainer,
+reachable at hbench@eecs.harvard.edu.

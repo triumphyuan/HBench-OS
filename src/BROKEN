@@ -1,0 +1,3 @@
+The following are not functional in hbench:
+	lat_pagefault
+	lmdd

@@ -1,0 +1,274 @@
+$Id: interpreting-results,v 1.2 1997/06/28 03:49:59 abrown Exp $
+
+INTRODUCTION
+------------ 
+This file is your guide to the HBench-OS results. It explains the
+format of the results output directory, and describes some of the
+included scripts that are useful for post-processing and analyzing
+the results.
+
+FORMAT OF THE RESULT DIRECTORY
+------------------------------
+The HBench-OS benchmarks place all of the results from a given
+benchmark run into one directory, usually in
+
+	hbench-OS/Results/<os>-<arch>/<hostname>.<seq#>/*
+
+unless overridden in the run file. Within this directory are many
+files. In general, the results for each combination of benchmark test
+and input parameters for that test are placed into one file whose name
+indicates both the benchmark tests and the parameters. The format for
+this filename is:
+
+	benchmark_param1_param2_..._paramN
+
+That is, the format of the filename is a series of
+underscore-separated components, with the the name of the benchmark
+executable forming the first component, and each parameter to the
+benchmark forming an additional component.
+
+One exception to this is the memory latency data, which is stored in
+its own subdirectory (lat_mem_rd/). The files in this subdirectory
+follow the same format (in content and name) as the other standard
+data files.
+
+The format of the data files is described below ("Data File Format").
+
+The result directory also contains several special files:
+
+(*)	summary:	a brief summary of all results
+(*)	analysis:	a brief analysis of some of the results
+(*)	sysconf:	describes the test system configuration
+	mhz:		contains the test system's CPU speed
+	cycletime:	contains the test system's clock cycle time
+	errors:		if errors occurred, they're listed in this file
+	versions:	all of the RCSId's for the benchmarks run
+	stderr:		complete dump of stderr output during the benchmarks
+
+The files marked with a (*) are described in more detail below.
+
+DATA FILE FORMAT
+----------------
+Each benchmark places its results in files named as described above
+(benchmark_param1_param2_..._paramN). Each such file contains the data
+produced by the benchmark and parameter set specified in its
+filename. The format of this data is simple: there is one data point
+per line, and each data point corresponds to a benchmark result from
+one of the iterations of the benchmark test. Thus, the number of data
+points (and number of lines) in each output file is governed by the
+number of iterations specified in the run file or during interactive
+setup.
+
+Each data point is represented in the file as a floating-point
+value. For bandwidth tests (bw_*), the units for the data values are
+megabytes per second (MB/sec). For latency tests (lat_*, except
+lat_mem_rd), the units for the data values are microseconds (us). For
+the memory latency data files (lat_mem_rd/*), the data values are
+measured in nanoseconds (ns).
+
+When event counters are enabled, the format of the data files changes
+slightly. Each line still represents one data point, but there are
+extra space-separated fields on each line to store the counter
+values. The first field still contains the ordinary benchmark
+result. For bandwidth tests, the second field contains the number of
+bytes actually transferred by the test (this is needed because the
+counter values are not normalized to per-byte or per-MB units). This
+field is simply omitted for the latency tests. The last two fields
+contain the actual counter values measured for the two event counters
+during benchmark execution. If only one event counter was enabled,
+then only one field will be present. To summarize:
+
+	bandwidth test: "benchmark_result nbytes_xferred [counter1] [counter2]"
+	latency test:   "benchmark_result [counter1] [counter2]"
+
+Note that, since all data points from all runs are preserved in these
+output files, it is a simple exercise to view the distributions of the
+raw data. The "summary" file, described below, presents an easier way
+of viewing the data, after some simple statistical reduction has been
+applied.
+
+SYSTEM CONFIGURATION FILE (sysconf)
+-----------------------------------
+The sysconf file placed in the result directory contains important
+configuration information collected on the test system. It includes
+most of the important information from the run file (including the
+hostname, platform, architecture, OS-type, test file used, etc.). It
+also contains the results of running several system status utilities,
+including "uptime", "ifconfig", "netstat", "mount", "df",
+etc. Thus, important information such as system load, number of users,
+active network interfaces, disk partitions, etc. is collected. Finally,
+the sysconf file also contains the times at which the benchmark run
+started and completed.
+
+RESULT SUMMARY FILE (summary)
+-----------------------------
+The result summary file "summary" in the result directory contains a
+one-file summary of all results collected, excluding the lat_mem_rd
+(memory read latency) results. The format of this file is simple:
+after a bit of header information to identify the test system, the
+file has one section per benchmark, in the following form:
+
+  benchmark_name:
+     params1: <results1>
+     params2: <results2>
+     ...
+     parmasN: <resultsN>
+
+where benchmark_name is the name of the benchmark executable, paramsK
+is the Kth set of (space-separated) parameters to the benchmark, and
+<resultsK> is the one-line output that results from applying the
+"stats-full" script (see below) to the data file corresponding to the
+benchmark and the Kth parameter set.
+
+As an example, if the run's test file contained a line
+	"lat_syscall:simple dynamic:simple static"
+then "summary" might contain something like:
+
+  lat_proc:
+     simple dynamic: 20626.140633 (std. 41.659295, 0.20%) [median 20614.796900]
+     simple static: 5705.472667 (std. 17.929767, 0.31%) [median 5695.628900]
+
+with the default "stats-full" script (the results are just examples
+here).
+
+ANALYSIS FILE (analysis)
+------------------------
+To satisfy its goal of being useful for OS research and development, 
+HBench-OS attempts to do more than just spit out raw numbers. As part
+of this goal, HBench-OS results include a file "analysis", which
+contains some basic automatic analysis of the data results. The goal
+of this file and its contents is not to replace traditional, detailed
+analysis of the results, but rather is to help provide a good starting
+point for such traditional analysis by pointing out correlations and
+discrepancies in the data.
+
+The "analysis" file currently includes two sections. The first
+analyzes the memory hierarchy, examining cache size and latency as
+well as correlations between memory read/write/bzero/copy
+bandwidths. The second section looks at basic operating system
+functionality, including null system call time, process creation time,
+virtual memory overhead, network stack overhead, and IPC overhead.
+
+Please note several things about the automatic analysis and its results:
+	(1) it requires a large set of benchmarks to be present. If
+	    you have significantly modified the set of benchmarks
+	    included (compared to those in full.test), the automatic
+	    analysis may fail.
+	(2) the analysis that is produced is rudimentary, and its
+	    conclusions should not be used directly without further
+	    verification. It is provided as a guideline for further
+	    analysis only.
+	(3) as with the summary, generation of the analysis requires
+	    the stats-full and stats-single data reduction scripts, 
+	    described in detail below
+	(4) the default analysis generator (scripts/gen-analysis)
+	    requires perl5 to run.
+
+STATISTICAL ANALYSIS POLICIES
+-----------------------------
+HBench-OS allows you to apply any statistical policy you wish to the
+raw data when generating the summary and analysis files. Since all of
+the raw data is preserved, you can also ignore the summary/analysis
+files entirely and look only at the raw data and its distributions.
+
+To customize the statistical policy used in creating the summary,
+simply edit or replace the hbench-OS/scripts/stats-full script. This
+script takes a filename as its first parameter; this file is expected
+to be in the standard HBench-OS result data file format (see
+above). The script then processes the raw data points contained in the
+file and outputs one line of statistically-reduced data to stdout; the
+scripts that generate the summary and analysis include this one line
+of output directly. There is no constraint on the format of the output
+data, as long as it is in one line.
+
+There is also a stats-single script, used primarily to generate the
+"analysis" file. This script also takes the filename of a standard
+HBench-OS result file as its only parameter, but only outputs a single
+floating-point number to stdout. This number should be representative
+of the raw data values, and ideally should be calculated with a
+similar statistical policy as in stats-full. For example, if the
+stats-full output included mean and standard deviation, then
+stats-single might return just the mean.
+
+The standard data-reduction policy, implemented in perl5 in the
+included stats-full and stats-single scripts, takes a 20% trimmed mean
+of the raw data (the data are sorted and the top and bottom 20% are
+discarded, then the remaining 60% are averaged). The stats-full script
+reports the trimmed mean, median, and (trimmed) standard deviation, in
+the format seen above in the example summary output for lat_proc; the
+stats-single script reports only the trimmed mean.
+
+LATENCY GRAPHS
+--------------
+HBench-OS's memory latency benchmark (lat_mem_rd) generates an
+enormous amount of data into the lat_mem_rd subdirectory of the result
+directory. This data is most useful when viewed graphically as latency
+vs. buffer size and stride size; in this form, a clear picture emerges
+of the salient features of the test system's memory hierarchy.
+
+HBench-OS includes a script that post-processes the lat_mem_rd data
+and feeds it to gnuplot to produce such a graph. This script can be
+run manually as:
+
+	hbench-OS/scripts/gen-latgraph [-ps] <dir>
+
+where <dir> is the directory that contains the lat_mem_rd results
+(usually hbench-OS/Results/<os>-<arch>/<hostname>/lat_mem_rd/). The
+script generates several reduced data files (using the stats-single
+script described above) called plot.strideX where X is replaced by the
+one of the stride sizes measured, and also a gnuplot command file,
+"gnuplot.in". To view the graph, change to the lat_mem_rd directory,
+start gnuplot, and type 'load "gnuplot.in"'. Alternatively, if you
+pass the "-ps" flag to gen-latgraph, gnuplot will be automatically
+invoked and a PostScript version of the graph will be left in the
+lat_mem_rd directory, as "lat_mem_rd/plot.ps".
+
+The process of generating the PostScript latency graphs for all tested
+machines can be done automatically by running "make latencygraphs"
+from the hbench-OS/Results directory.
+
+SUMMARY OF ANALYSIS SCRIPTS
+---------------------------
+The scripts provided with HBench-OS that can be used to analyze the
+output data of the benchmarks are:
+
+	scripts/gen-summary
+	scripts/gen-analysis
+	scripts/gen-latgraph
+	scripts/stats-full
+	scripts/stats-single
+
+The following make targets are available in the hbench-OS/Results
+directory to automate analysis across multiple result datasets:
+
+	make summaries	-- create "summary" for all stored result datasets
+	make analyses	-- create "analysis" for all stored result datasets
+	make latencygraphs -- create "lat_mem_rd/plot.ps" for all stored 
+                              result datasets
+
+Note: since perl5 is required in order to generate both the summary
+and analysis reports, test machines that lack perl5 will not have
+automatically-generated summary or analysis reports. It is possible to
+generate (or re-generate) these reports after installing perl5 (or on
+another system) either manually by running 
+
+	hbench-OS/scripts/gen-summary <resultdir> > <summaryfile>
+	hbench-OS/scripts/gen-analysis <resultdir> > <analysisfile>
+
+or by running "make summaries analyses" from hbench-OS/Results (this
+will generate summaries and analyses for all result directories).
+
+COPYRIGHT
+---------
+This documentation is:
+
+Copyright (c) 1997 The President and Fellows of Harvard College.
+All Rights Reserved.
+Copyright (c) 1997 Aaron B. Brown.
+
+QUESTIONS/COMMENTS/BUGFIXES
+---------------------------
+If you have any questions, comments, or bug reports about this
+documentation or HBench-OS, please send them to the author, Aaron
+Brown, at abrown@eecs.harvard.edu, or the HBench-OS maintainer,
+reachable at hbench@eecs.harvard.edu.
