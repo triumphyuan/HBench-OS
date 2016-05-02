@@ -43,7 +43,7 @@
 #               the hostname
 # summary	produce a summary version of all stored results
 
-SHELL=/bin/sh
+SHELL=/bin/bash
 ARCH=`$(SHELL) ./scripts/config.guess | sed 's/-.*-.*$$//'`
 HOSTNAME=`hostname | sed 's/\..*$$//'`
 
@@ -73,4 +73,3 @@ run:
 
 summary:
 	cd Results && $(MAKE) summary
-
