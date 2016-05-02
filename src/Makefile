@@ -46,7 +46,7 @@
 # Note that mhz will not work on an unpipelined, non-RISC CPU like the i386.
 #
 # OS config.  If your OS is not special-cased below, and the defaults don't
-# work, then you'll need to add a case below setting up the appropriate 
+# work, then you'll need to add a case below setting up the appropriate
 # compiler and flags. If you do this, send me mail with the diffs to this
 # makefile.
 #
@@ -54,7 +54,7 @@
 
 SHELL=/bin/sh
 
-CC=gcc
+CC=musl-gcc -static -DNO_PORTMAPPER
 PLATFORM=`$(SHELL) ../scripts/config.guess`
 ARCH=`$(SHELL) ../scripts/config.guess | sed 's/-.*-.*$$//'`
 OS=`$(SHELL) ../scripts/config.guess | sed 's/^.*-.*-//'`
@@ -133,17 +133,20 @@ SRCS=	bench.h bw_bzero.c bw_file_rd.c bw_mem_cp.c bw_mem_rd.c bw_mem_wr.c \
 	lat_sig.c lat_syscall.c lay_tcp.c lat_udp.c lib_tcp.c lib_udp.c \
 	memsize.c mhz.c timing.c utils.c lmdd.c lat_pagefault.c
 
+#EXES=	$(BINDIR)/lat_syscall $(BINDIR)/hello $(BINDIR)/hello-s \
+
 EXES=	$(BINDIR)/bw_bzero $(BINDIR)/bw_file_rd $(BINDIR)/bw_mem_cp \
 	$(BINDIR)/bw_mem_rd $(BINDIR)/bw_mem_wr $(BINDIR)/bw_mmap_rd \
 	$(BINDIR)/bw_pipe $(BINDIR)/bw_tcp $(BINDIR)/lat_connect \
 	$(BINDIR)/lat_ctx $(BINDIR)/lat_fs $(BINDIR)/lat_fslayer \
 	$(BINDIR)/lat_mem_rd $(BINDIR)/lat_mmap $(BINDIR)/lat_pipe \
-	$(BINDIR)/lat_proc $(BINDIR)/lat_rpc $(BINDIR)/lat_sig \
+	$(BINDIR)/lat_proc $(BINDIR)/lat_sig \
 	$(BINDIR)/lat_syscall $(BINDIR)/lat_tcp $(BINDIR)/lat_udp \
 	$(BINDIR)/lat_ctx2 \
 	$(BINDIR)/memsize $(BINDIR)/hello $(BINDIR)/hello-s \
 	$(BINDIR)/mhz $(BINDIR)/mhz-counter
 #	$(BINDIR)/lmdd $(BINDIR)/lat_pagefault
+
 
 binaries: setupdirs $(EXES)
 
@@ -300,4 +303,3 @@ $(BINDIR)/timing:  timing.c bench.h
 
 $(BINDIR)/utils:  utils.c bench.h timing.c
 	$(COMPILE) -o $(BINDIR)/utils utils.c $(LDLIBS)
-
