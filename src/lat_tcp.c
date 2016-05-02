@@ -39,16 +39,20 @@
  */
 char	*id = "$Id: lat_tcp.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 
+#include <sys/wait.h>
+
 #include "common.c"
 #include "lib_tcp.c"
 
 /* Worker functions */
 int do_client();
+void server_main();
+void doserver(int sock);
 
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 char 		*rhostname;	/* hostname of remote host */
 int		killserver = 0;	/* flag to tell client to kill server */
@@ -82,7 +86,7 @@ main(ac, av)
 		exit(0);
 	}
 
-	/* Starting client */	
+	/* Starting client */
 	if (av[2][0] == '-') {
 		killserver = 1;	/* signal client to kill server */
 		rhostname = &av[2][1];
@@ -95,7 +99,7 @@ main(ac, av)
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -104,7 +108,7 @@ main(ac, av)
 	 */
 	if (niter == 0) {
 		niter = gen_iterations(&do_client, clock_multiplier);
-		
+
 		printf("%d\n",niter);
 		return (0);
 	}
@@ -119,7 +123,7 @@ main(ac, av)
 	do_client(niter, &totaltime);	/* get TCP latency */
 
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -134,7 +138,7 @@ do_client(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * char *rhostname;
 	 * int killserver;
@@ -162,7 +166,9 @@ do_client(num_iter, t)
 		write(sock, &c, 1);
 		read(sock, &c, 1);
 	}
-	*t = stop(c);
+	*t = stop();
+
+	close(sock);
 
 	return (0);
 }
@@ -174,6 +180,7 @@ child(unused)
 	signal(SIGCHLD, child);
 }
 
+void
 server_main()
 {
 	int     newsock, sock;
@@ -184,13 +191,14 @@ server_main()
 	for (;;) {
 		newsock = tcp_accept(sock, SOCKOPT_NONE);
 		switch (fork()) {
-		    case -1:
+		case -1:
 			perror("fork");
 			break;
-		    case 0:
+		case 0:
 			doserver(newsock);
 			exit(0);
-		    default:
+			break;
+		default:
 			close(newsock);
 			break;
 		}
@@ -198,7 +206,8 @@ server_main()
 	/* NOTREACHED */
 }
 
-doserver(sock)
+void
+doserver(int sock)
 {
 	char    c;
 	int	n = 0;
