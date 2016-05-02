@@ -12,6 +12,8 @@
 
 /* #define	LIBTCP_VERBOSE	/**/
 
+void sock_optimize(int sock, int rdwr);
+
 u_short	pmap_getport();
 
 /*
@@ -159,17 +161,19 @@ tcp_connect(host, prog, rdwr)
 		bzero((char *) &s, sizeof(s));
 		s.sin_family = AF_INET;
 		bcopy(h->h_addr, (char *) &s.sin_addr, h->h_length);
+#ifndef	NO_PORTMAPPER
 		save_port = pmap_getport(&s, prog, (u_long)1, IPPROTO_TCP);
 		if (!save_port) {
 			perror("lib TCP: No port found");
 			exit(3);
 		}
+#endif
 #ifdef	LIBTCP_VERBOSE
 		fprintf(stderr, "Server port %d\n", save_port);
 #endif
 	}
 #ifdef	NO_PORTMAPPER
-	s.sin_port = prog;
+	s.sin_port = htons(prog);
 #else
 	s.sin_port = htons(save_port);
 #endif
@@ -183,7 +187,8 @@ tcp_connect(host, prog, rdwr)
 /*
  * This is identical in lib_tcp.c and lib_udp.c
  */
-sock_optimize(sock, rdwr)
+void
+sock_optimize(int sock, int rdwr)
 {
 	if (rdwr == SOCKOPT_READ || rdwr == SOCKOPT_RDWR) {
 		int	sockbuf = SOCKBUF;

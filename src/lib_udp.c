@@ -59,7 +59,9 @@ udp_server(prog, rdwr)
  */
 udp_done(prog)
 {
+#ifndef	NO_PORTMAPPER
 	(void)pmap_unset((u_long)prog, (u_long)1);
+#endif
 }
 
 /*
