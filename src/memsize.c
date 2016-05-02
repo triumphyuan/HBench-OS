@@ -53,7 +53,7 @@ main(ac, av)
 	size_t	max;
 
 	if (parse_counter_args(&ac, &av) || ac > 2) {
-		fprintf(stderr, "usage: %s%s [maxmemsizeinMB]\n", 
+		fprintf(stderr, "usage: %s%s [maxmemsizeinMB]\n",
 			av[0], counter_argstring);
 		exit(1);
 	}
