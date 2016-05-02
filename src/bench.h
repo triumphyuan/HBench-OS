@@ -7,20 +7,13 @@
 #include        <signal.h>
 #include        <errno.h>
 
-#ifdef	NO_PORTMAPPER
 #define	TCP_XACT	3962
 #define	TCP_CONTROL	3963
 #define	TCP_DATA	3964
 #define	TCP_CONNECT	3965
-#else
-#define	TCP_XACT	(u_long)404039	/* XXX - unregistered */
-#define	TCP_CONTROL	(u_long)404040	/* XXX - unregistered */
-#define	TCP_DATA	(u_long)404041	/* XXX - unregistered */
-#define	TCP_CONNECT	(u_long)404042	/* XXX - unregistered */
-#define	UDP_XACT 	(u_long)404032	/* XXX - unregistered */
-#define	UDP_DATA 	(u_long)404033	/* XXX - unregistered */
+#define	UDP_XACT 	(u_long)3966	/* XXX - unregistered */
+#define	UDP_DATA 	(u_long)3967	/* XXX - unregistered */
 #define	VERS		(u_long)1
-#endif
 
 /*
  * socket send/recv buffer optimizations
@@ -80,7 +73,6 @@ void	tvsub();
  * It was generated using rpcgen.
  */
 
-#include <rpc/types.h>
 
 #define XACT_PROG ((u_long)3970)
 #define XACT_VERS ((u_long)1)
