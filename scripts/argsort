@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 # Copyright (c) 1997 The President and Fellows of Harvard College.
 # All rights reserved.
 # Copyright (c) 1997 Aaron B. Brown.
@@ -26,10 +28,6 @@
 # Perl script to do custom sorting for arguments in filenames
 #
 # $Id: argsort,v 1.2 1997/06/27 00:36:21 abrown Exp $
-
-eval "exec perl $0 $*"
-	if 0;
-
 
 while (<STDIN>) {
     chop();
@@ -62,12 +60,12 @@ sub my_sort {
     $b2 =~ s/\s+/ /;
     ($fa1, $fa2, $fa3, $fa4, $fa5, $fa6, $fa7, $fa8) = split(/\s+/, $a2);
     ($fb1, $fb2, $fb3, $fb4, $fb5, $fb6, $fb7, $fb8) = split(/\s+/, $b2);
-    ($fa1 <=> $fb1 || 
-     $fa2 <=> $fb2 ||      
-     $fa3 <=> $fb3 ||      
-     $fa4 <=> $fb4 ||      
-     $fa5 <=> $fb5 ||      
-     $fa6 <=> $fb6 ||      
-     $fa7 <=> $fb7 ||      
+    ($fa1 <=> $fb1 ||
+     $fa2 <=> $fb2 ||
+     $fa3 <=> $fb3 ||
+     $fa4 <=> $fb4 ||
+     $fa5 <=> $fb5 ||
+     $fa6 <=> $fb6 ||
+     $fa7 <=> $fb7 ||
      $fa8 <=> $fb8 || $a cmp $b);
 }
