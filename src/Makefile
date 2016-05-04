@@ -135,17 +135,27 @@ SRCS=	bench.h bw_bzero.c bw_file_rd.c bw_mem_cp.c bw_mem_rd.c bw_mem_wr.c \
 
 #EXES=	$(BINDIR)/lat_syscall $(BINDIR)/hello $(BINDIR)/hello-s \
 
-EXES=	$(BINDIR)/bw_bzero $(BINDIR)/bw_file_rd $(BINDIR)/bw_mem_cp \
-	$(BINDIR)/bw_mem_rd $(BINDIR)/bw_mem_wr $(BINDIR)/bw_mmap_rd \
-	$(BINDIR)/bw_pipe $(BINDIR)/bw_tcp $(BINDIR)/lat_connect \
-	$(BINDIR)/lat_ctx $(BINDIR)/lat_fs $(BINDIR)/lat_fslayer \
-	$(BINDIR)/lat_mem_rd $(BINDIR)/lat_mmap $(BINDIR)/lat_pipe \
-	$(BINDIR)/lat_proc $(BINDIR)/lat_sig \
-	$(BINDIR)/lat_syscall $(BINDIR)/lat_tcp $(BINDIR)/lat_udp \
-	$(BINDIR)/lat_ctx2 \
-	$(BINDIR)/memsize $(BINDIR)/hello $(BINDIR)/hello-s \
-	$(BINDIR)/mhz $(BINDIR)/mhz-counter
-#	$(BINDIR)/lmdd $(BINDIR)/lat_pagefault
+NAMES=	bw_bzero bw_file_rd \
+	bw_mem_cp bw_mem_rd bw_mem_wr \
+	bw_mmap_rd \
+	bw_pipe bw_tcp \
+	lat_connect \
+	lat_ctx lat_ctx2 \
+	lat_fs lat_fslayer \
+	lat_mem_rd \
+	lat_mmap \
+	lat_pipe \
+	lat_proc \
+	lat_sig \
+	lat_syscall \
+	lat_tcp \
+	lat_udp \
+	memsize hello hello-s \
+	mhz mhz-counter \
+#	lmdd \
+#	lat_pagefault \
+
+EXES= $(addprefix $(BINDIR)/, $(addsuffix $(EXT),$(NAMES)))
 
 
 binaries: setupdirs $(EXES)
@@ -166,49 +176,36 @@ depend:
 ###
 
 # Build static hello, if possible
-$(BINDIR)/hello-s: hello.c
+$(BINDIR)/hello-s$(EXT): hello.c
 	@echo Generating statically-linked hello...
-	@if [ `basename $(CC)` = gcc ]; \
-	then $(COMPILE) -static -o $(BINDIR)/hello-s hello.c $(LDLIBS); \
-	elif [ $(OSROOT) = solaris ]; \
-	then $(CC) $(SYS5) -Bstatic -dn -o $(BINDIR)/hello-s hello.c $(LDLIBS); \
-	elif [ $(OSROOT) = sunos ]; \
-	then $(CC) -Bstatic -o $(BINDIR)/hello-s hello.c $(LDLIBS); \
-	elif [ $(OSROOT) = osf ]; \
-	then $(CC) -non_shared -o $(BINDIR)/hello-s hello.c $(LDLIBS); \
-	elif [ $(OSROOT) = irix -a -d /usr/lib/nonshared ]; \
-	then $(CC) -non_shared -o $(BINDIR)/hello-s hello.c $(LDLIBS); \
-	fi
+	$(COMPILE) -static -o $@ hello.c $(LDLIBS)
 # Move this line above the "fi" (and backslash) to try a gcc-version of static
 #	else $(COMPILE) -static -o $(BINDIR)/hello-s hello.c $(LDLIBS);
 
 
 # Build dynamic hello
-$(BINDIR)/hello: hello.c
+$(BINDIR)/hello$(EXT): hello.c
 	@echo Generating dynamically-linked hello...
 	@if [ $(OSROOT) = bsdi ]; \
 	then shlicc -O -o $(BINDIR)/hello hello.c $(LDLIBS); \
-	else $(COMPILE) -o $(BINDIR)/hello hello.c $(LDLIBS); \
+	else $(COMPILE) -o $@ hello.c $(LDLIBS); \
 	fi
 
 # No optimization for these.
-$(BINDIR)/mhz: mhz.c common.c bench.h timing.c utils.c counter-common.c
+$(BINDIR)/mhz$(EXT): mhz.c common.c bench.h timing.c utils.c counter-common.c
 	@echo Compiling mhz...
-	@if [ $(OSROOT) = irix ]; \
-	then cp mhz.irix $(BINDIR)/mhz; chmod +xw $(BINDIR)/mhz; \
-	else $(CC) $(SYS5) -o $(BINDIR)/mhz mhz.c; \
-	fi
+	$(CC) $(SYS5) -o $@ mhz.c
 
-$(BINDIR)/mhz-counter: mhz.c common.c bench.h timing.c utils.c counter-common.c
+$(BINDIR)/mhz-counter$(EXT): mhz.c common.c bench.h timing.c utils.c counter-common.c
 	@if [ X$(COUNTERS)X != XX ]; \
-	then $(CC) $(COUNTERS) $(SYS5) -o $(BINDIR)/mhz-counter mhz.c; \
+	then $(CC) $(COUNTERS) $(SYS5) -o $@ mhz.c; \
 	fi
 
-$(BINDIR)/lat_ctx2: lat_ctx2.c
+$(BINDIR)/lat_ctx2$(EXT): lat_ctx2.c
 	@echo $(COMPILE)-o $(BINDIR)/lat_ctx2 lat_ctx2.c $(LDLIBS)
 	@if [ $(OSROOT) = irix ];\
 	then	$(CC) $(SYS5) -32 -O1 -o $(BINDIR)/lat_ctx2 lat_ctx2.c;\
-	else	$(COMPILE) -o $(BINDIR)/lat_ctx2 lat_ctx2.c $(LDLIBS);\
+	else	$(COMPILE) -o $@ lat_ctx2.c $(LDLIBS);\
 	fi
 
 # XXX not currently supported
@@ -220,29 +217,29 @@ $(BINDIR)/lat_ctx2: lat_ctx2.c
 
 # Do not remove the next line, $(MAKE) depend needs it
 # MAKEDEPEND follows
-$(BINDIR)/bw_bzero:  bw_bzero.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_bzero bw_bzero.c $(LDLIBS)
+$(BINDIR)/bw_bzero$(EXT):  bw_bzero.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_bzero.c $(LDLIBS)
 
-$(BINDIR)/bw_file_rd:  bw_file_rd.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_file_rd bw_file_rd.c $(LDLIBS)
+$(BINDIR)/bw_file_rd$(EXT):  bw_file_rd.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_file_rd.c $(LDLIBS)
 
-$(BINDIR)/bw_mem_cp:  bw_mem_cp.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_mem_cp bw_mem_cp.c $(LDLIBS)
+$(BINDIR)/bw_mem_cp$(EXT):  bw_mem_cp.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_mem_cp.c $(LDLIBS)
 
-$(BINDIR)/bw_mem_rd:  bw_mem_rd.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_mem_rd bw_mem_rd.c $(LDLIBS)
+$(BINDIR)/bw_mem_rd$(EXT):  bw_mem_rd.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_mem_rd.c $(LDLIBS)
 
-$(BINDIR)/bw_mem_wr:  bw_mem_wr.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_mem_wr bw_mem_wr.c $(LDLIBS)
+$(BINDIR)/bw_mem_wr$(EXT):  bw_mem_wr.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_mem_wr.c $(LDLIBS)
 
-$(BINDIR)/bw_mmap_rd:  bw_mmap_rd.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_mmap_rd bw_mmap_rd.c $(LDLIBS)
+$(BINDIR)/bw_mmap_rd$(EXT):  bw_mmap_rd.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_mmap_rd.c $(LDLIBS)
 
-$(BINDIR)/bw_pipe:  bw_pipe.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/bw_pipe bw_pipe.c $(LDLIBS)
+$(BINDIR)/bw_pipe$(EXT):  bw_pipe.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ bw_pipe.c $(LDLIBS)
 
-$(BINDIR)/bw_tcp:  bw_tcp.c common.c bench.h counter-common.c timing.c utils.c  lib_tcp.c
-	$(COMPILE) -o $(BINDIR)/bw_tcp bw_tcp.c $(LDLIBS)
+$(BINDIR)/bw_tcp$(EXT):  bw_tcp.c common.c bench.h counter-common.c timing.c utils.c  lib_tcp.c
+	$(COMPILE) -o $@ bw_tcp.c $(LDLIBS)
 
 $(BINDIR)/common:  common.c bench.h counter-common.c timing.c utils.c
 	$(COMPILE) -o $(BINDIR)/common common.c $(LDLIBS)
@@ -250,56 +247,56 @@ $(BINDIR)/common:  common.c bench.h counter-common.c timing.c utils.c
 $(BINDIR)/counter-common:  counter-common.c
 	$(COMPILE) -o $(BINDIR)/counter-common counter-common.c $(LDLIBS)
 
-$(BINDIR)/lat_connect:  lat_connect.c common.c bench.h counter-common.c  timing.c utils.c lib_tcp.c
-	$(COMPILE) -o $(BINDIR)/lat_connect lat_connect.c $(LDLIBS)
+$(BINDIR)/lat_connect$(EXT):  lat_connect.c common.c bench.h counter-common.c  timing.c utils.c lib_tcp.c
+	$(COMPILE) -o $@ lat_connect.c $(LDLIBS)
 
-$(BINDIR)/lat_ctx:  lat_ctx.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_ctx lat_ctx.c $(LDLIBS)
+$(BINDIR)/lat_ctx$(EXT):  lat_ctx.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ lat_ctx.c $(LDLIBS)
 
-$(BINDIR)/lat_fs:  lat_fs.c common.c bench.h counter-common.c timing.c utils.c
-	$(COMPILE) -o $(BINDIR)/lat_fs lat_fs.c $(LDLIBS)
+$(BINDIR)/lat_fs$(EXT):  lat_fs.c common.c bench.h counter-common.c timing.c utils.c
+	$(COMPILE) -o $@ lat_fs.c $(LDLIBS)
 
-$(BINDIR)/lat_fslayer:  lat_fslayer.c common.c bench.h counter-common.c  timing.c utils.c
-	$(COMPILE) -o $(BINDIR)/lat_fslayer lat_fslayer.c $(LDLIBS)
+$(BINDIR)/lat_fslayer$(EXT):  lat_fslayer.c common.c bench.h counter-common.c  timing.c utils.c
+	$(COMPILE) -o $@ lat_fslayer.c $(LDLIBS)
 
-$(BINDIR)/lat_mem_rd:  lat_mem_rd.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_mem_rd lat_mem_rd.c $(LDLIBS)
+$(BINDIR)/lat_mem_rd$(EXT):  lat_mem_rd.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ lat_mem_rd.c $(LDLIBS)
 
 $(BINDIR)/lat_mmap$(EXT):  lat_mmap.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_mmap lat_mmap.c $(LDLIBS)
+	$(COMPILE) -o $@ lat_mmap.c $(LDLIBS)
 
 $(BINDIR)/lat_pipe$(EXT):  lat_pipe.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_pipe lat_pipe.c $(LDLIBS)
+	$(COMPILE) -o $@ lat_pipe.c $(LDLIBS)
 
 $(BINDIR)/lat_proc$(EXT):  lat_proc.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_proc$(EXT) lat_proc.c $(LDLIBS)
+	$(COMPILE) -o $@ lat_proc.c $(LDLIBS)
 
-$(BINDIR)/lat_rpc:  lat_rpc.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_rpc lat_rpc.c $(LDLIBS)
+$(BINDIR)/lat_rpc$(EXT):  lat_rpc.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ lat_rpc.c $(LDLIBS)
 
 $(BINDIR)/lat_sig$(EXT):  lat_sig.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_sig$(EXT) lat_sig.c $(LDLIBS)
+	$(COMPILE) -o $@ lat_sig.c $(LDLIBS)
 
 $(BINDIR)/lat_syscall$(EXT):  lat_syscall.c common.c bench.h counter-common.c  timing.c utils.c
-	$(COMPILE) -o $(BINDIR)/lat_syscall$(EXT) lat_syscall.c $(LDLIBS)
+	$(COMPILE) -o $@ lat_syscall.c $(LDLIBS)
 
-$(BINDIR)/lat_tcp:  lat_tcp.c common.c bench.h counter-common.c timing.c  utils.c lib_tcp.c
-	$(COMPILE) -o $(BINDIR)/lat_tcp lat_tcp.c $(LDLIBS)
+$(BINDIR)/lat_tcp$(EXT):  lat_tcp.c common.c bench.h counter-common.c timing.c  utils.c lib_tcp.c
+	$(COMPILE) -o $@ lat_tcp.c $(LDLIBS)
 
-$(BINDIR)/lat_udp:  lat_udp.c common.c bench.h counter-common.c timing.c  utils.c lib_udp.c
-	$(COMPILE) -o $(BINDIR)/lat_udp lat_udp.c $(LDLIBS)
+$(BINDIR)/lat_udp$(EXT):  lat_udp.c common.c bench.h counter-common.c timing.c  utils.c lib_udp.c
+	$(COMPILE) -o $@ lat_udp.c $(LDLIBS)
 
-$(BINDIR)/lib_tcp:  lib_tcp.c bench.h
-	$(COMPILE) -o $(BINDIR)/lib_tcp lib_tcp.c $(LDLIBS)
+$(BINDIR)/lib_tcp$(EXT):  lib_tcp.c bench.h
+	$(COMPILE) -o $@ lib_tcp.c $(LDLIBS)
 
-$(BINDIR)/lib_udp:  lib_udp.c bench.h
-	$(COMPILE) -o $(BINDIR)/lib_udp lib_udp.c $(LDLIBS)
+$(BINDIR)/lib_udp$(EXT):  lib_udp.c bench.h
+	$(COMPILE) -o $@ lib_udp.c $(LDLIBS)
 
-$(BINDIR)/memsize:  memsize.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/memsize memsize.c $(LDLIBS)
+$(BINDIR)/memsize$(EXT):  memsize.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $@ memsize.c $(LDLIBS)
 
-$(BINDIR)/timing:  timing.c bench.h
-	$(COMPILE) -o $(BINDIR)/timing timing.c $(LDLIBS)
+$(BINDIR)/timing$(EXT):  timing.c bench.h
+	$(COMPILE) -o $@ timing.c $(LDLIBS)
 
-$(BINDIR)/utils:  utils.c bench.h timing.c
-	$(COMPILE) -o $(BINDIR)/utils utils.c $(LDLIBS)
+$(BINDIR)/utils$(EXT):  utils.c bench.h timing.c
+	$(COMPILE) -o $@ utils.c $(LDLIBS)
