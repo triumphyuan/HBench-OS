@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 # Copyright (c) 1997 The President and Fellows of Harvard College.
 # All rights reserved.
 # Copyright (c) 1997 Aaron B. Brown.
@@ -31,10 +33,6 @@
 # Output goes to stdout
 #
 # $Id: gen-analysis,v 1.4 1997/06/27 00:36:21 abrown Exp $
-
-# get into perl
-eval "exec perl $0 $*"
-	if 0;
 
 if ($#ARGV != 0) {
 	die "Usage: gen-analysis <result-dir>\n";
@@ -80,7 +78,7 @@ chop($cycletime);
 
 # We want to get cache sizes and latencies here.
 # We'll use the latency data to identify the sizes and latencies.
-# Let's choose stride=128, since that should be bigger than most cache line 
+# Let's choose stride=128, since that should be bigger than most cache line
 # sizes.
 opendir(RESULTDIR,"lat_mem_rd") || die "opendir: no memory latency results present";
 @latencyfiles = grep(/rd_.*_.*128$/, readdir(RESULTDIR));
@@ -140,7 +138,7 @@ for ($lev = 1; $lev < $curlevel; $lev++) {
     printf("    L%d Cache: %dKB, latency %.1f ns (%.1f cycles)\n",
 	   $lev-$subber, @cachesize[$lev], @cachelatency[$lev], $ncycles);
 }
-printf("    DRAM mem: latency %.1f ns (%.1f cycles)\n", 
+printf("    DRAM mem: latency %.1f ns (%.1f cycles)\n",
        @cachelatency[$curlevel], @cachelatency[$lev]/$cycletime);
 print "\n    NOTE: L2 cache sizes are particularly hard to determine automatically;\n";
 print "          please use gen-latgraph to examine the full latency graph to\n";
@@ -198,21 +196,21 @@ printf("    L1\$ : %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\
 if (abs(1.0 - $l1zero/$l1write) >= 0.1) {
     print "          There's a significant difference between the two; perhaps the\n";
     print "          hardware has optimized string instructions or block fill\n";
-    print "          capabilities used by libc?\n"; 
+    print "          capabilities used by libc?\n";
 }
 printf("    L2\$ : %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\n",
        $l2zero, $l2write, $l2zero/$l2write);
 if (abs(1.0 - $l2zero/$l2write) >= 0.1) {
     print "          There's a significant difference between the two; perhaps the\n";
     print "          hardware has optimized string instructions or block fill\n";
-    print "          capabilities used by libc?\n"; 
+    print "          capabilities used by libc?\n";
 }
 printf("    DRAM: %.2fMB/sec libc bzero, %.2fMB/sec unrolled write, %.2f ratio\n",
        $dramzero, $dramwrite, $dramzero/$dramwrite);
 if (abs(1.0 - $dramzero/$dramwrite) >= 0.1) {
     print "          There's a significant difference between the two; perhaps the\n";
     print "          hardware has optimized string instructions or block fill\n";
-    print "          capabilities used by libc?\n"; 
+    print "          capabilities used by libc?\n";
 }
 
 print "\n * Comparison of Projected and Measured Copy Bandwidths\n";
@@ -324,13 +322,13 @@ if ( -f "lat_proc_simple_static" && -f "lat_proc_sh_static" ) {
     $shs -= $simples;
     $simples -= $nulls;
 
-    printf("        fork:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+    printf("        fork:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n",
 	   $nulls, 100.0*$nulls/$totals, 100.0*$nulls/$nulld);
-    printf("        exec:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+    printf("        exec:    %.2f us (%.2f%%) [%.2f%% of dynamic]\n",
 	   $simples, 100.0*$simples/$totals, 100.0*$simples/$simpled);
-    printf("        /bin/sh: %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+    printf("        /bin/sh: %.2f us (%.2f%%) [%.2f%% of dynamic]\n",
 	   $shs, 100.0*$shs/$totals, 100.0*$shs/$shd);
-    printf("      Total:     %.2f us (%.2f%%) [%.2f%% of dynamic]\n", 
+    printf("      Total:     %.2f us (%.2f%%) [%.2f%% of dynamic]\n",
 	   $totals, 100.0, 100.0*$totals/$totald);
 }
 
@@ -371,7 +369,7 @@ if ($dramcopy/$tcpbw < 0.8) {
 }
 
 ##
-## Copies in pipe transfers 
+## Copies in pipe transfers
 ##
 print  "\n * Pipe-based IPC Copy Overhead:\n";
 
@@ -391,4 +389,3 @@ if ( $dramcopy/$pipebw < 0.8 ) {
     print  "       process scheduling between the client and server. There might\n";
     print  "       also be L2 cache effects that are not accounted for.\n";
 }
- 
