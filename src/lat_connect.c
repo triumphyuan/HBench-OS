@@ -50,7 +50,7 @@ int do_client();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 char 	*server;
 
@@ -76,7 +76,7 @@ main(ac, av)
 
 	/* parse command line parameters */
 	niter = atoi(av[1]);
-	
+
 	if (!strcmp(av[2], "-s")) { /* starting server */
 		if (fork() == 0) {
 			server_main(ac, av);
@@ -101,7 +101,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -136,7 +136,7 @@ main(ac, av)
 	return (0);
 }
 
-/* 
+/*
  * This function does all the work. It repeatedly connects to and disconnects
  * from the remote server, timing the entire operation.
  *
@@ -149,7 +149,7 @@ do_client(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * char		*server;
 	 */
@@ -161,7 +161,7 @@ do_client(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		sock = tcp_connect(server, TCP_CONNECT, SOCKOPT_NONE);
 	}
-	*t = stop();
+	*t = stop(NULL);
 	sleep(1);
 	close(sock);
 	return (0);

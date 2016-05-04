@@ -109,7 +109,7 @@ timeit(where, size)
 		touch(where, end, range);
 		start();
 		touch(where, end, range);
-		lat = stop();
+		lat = stop(NULL);
 		n = range / 4096;
 		if ((lat / n) > (clk_t)((float)TOO_LONG / clock_multiplier)) {
 			fprintf(stderr, "\n");

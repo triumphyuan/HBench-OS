@@ -54,7 +54,7 @@
 
 SHELL=/bin/sh
 
-CC=musl-gcc -static -DNO_PORTMAPPER
+CC = musl-gcc
 PLATFORM=`$(SHELL) ../scripts/config.guess`
 ARCH=`$(SHELL) ../scripts/config.guess | sed 's/-.*-.*$$//'`
 OS=`$(SHELL) ../scripts/config.guess | sed 's/^.*-.*-//'`
@@ -72,7 +72,7 @@ eventcountersP5:
 eventcountersP6:
 	@$(MAKE) COUNTERS=-DEVENT_COUNTERS=6 BINDIR=../bin/$(OS)-$(ARCH)-ec $(OSROOT)
 
-CFLAGS= -O $(SYS5) $(COUNTERS)
+CFLAGS= -static -DNO_PORTMAPPER -O $(SYS5) $(COUNTERS)
 
 COMPILE=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS)
 
@@ -265,23 +265,23 @@ $(BINDIR)/lat_fslayer:  lat_fslayer.c common.c bench.h counter-common.c  timing.
 $(BINDIR)/lat_mem_rd:  lat_mem_rd.c common.c bench.h counter-common.c timing.c  utils.c
 	$(COMPILE) -o $(BINDIR)/lat_mem_rd lat_mem_rd.c $(LDLIBS)
 
-$(BINDIR)/lat_mmap:  lat_mmap.c common.c bench.h counter-common.c timing.c  utils.c
+$(BINDIR)/lat_mmap$(EXT):  lat_mmap.c common.c bench.h counter-common.c timing.c  utils.c
 	$(COMPILE) -o $(BINDIR)/lat_mmap lat_mmap.c $(LDLIBS)
 
-$(BINDIR)/lat_pipe:  lat_pipe.c common.c bench.h counter-common.c timing.c  utils.c
+$(BINDIR)/lat_pipe$(EXT):  lat_pipe.c common.c bench.h counter-common.c timing.c  utils.c
 	$(COMPILE) -o $(BINDIR)/lat_pipe lat_pipe.c $(LDLIBS)
 
-$(BINDIR)/lat_proc:  lat_proc.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_proc lat_proc.c $(LDLIBS)
+$(BINDIR)/lat_proc$(EXT):  lat_proc.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $(BINDIR)/lat_proc$(EXT) lat_proc.c $(LDLIBS)
 
 $(BINDIR)/lat_rpc:  lat_rpc.c common.c bench.h counter-common.c timing.c  utils.c
 	$(COMPILE) -o $(BINDIR)/lat_rpc lat_rpc.c $(LDLIBS)
 
-$(BINDIR)/lat_sig:  lat_sig.c common.c bench.h counter-common.c timing.c  utils.c
-	$(COMPILE) -o $(BINDIR)/lat_sig lat_sig.c $(LDLIBS)
+$(BINDIR)/lat_sig$(EXT):  lat_sig.c common.c bench.h counter-common.c timing.c  utils.c
+	$(COMPILE) -o $(BINDIR)/lat_sig$(EXT) lat_sig.c $(LDLIBS)
 
-$(BINDIR)/lat_syscall:  lat_syscall.c common.c bench.h counter-common.c  timing.c utils.c
-	$(COMPILE) -o $(BINDIR)/lat_syscall lat_syscall.c $(LDLIBS)
+$(BINDIR)/lat_syscall$(EXT):  lat_syscall.c common.c bench.h counter-common.c  timing.c utils.c
+	$(COMPILE) -o $(BINDIR)/lat_syscall$(EXT) lat_syscall.c $(LDLIBS)
 
 $(BINDIR)/lat_tcp:  lat_tcp.c common.c bench.h counter-common.c timing.c  utils.c lib_tcp.c
 	$(COMPILE) -o $(BINDIR)/lat_tcp lat_tcp.c $(LDLIBS)

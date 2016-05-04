@@ -65,7 +65,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -88,7 +88,7 @@ main(ac, av)
 	do_pipe(niter, &totaltime);	/* get cached reread */
 
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -125,7 +125,7 @@ do_pipe(num_iter, t)
 			perror("read/write on pipe");
 			exit(1);
 		}
-		
+
 		/* Start timing */
 		start();
 		for (i = num_iter; i > 0; i--) {
@@ -135,7 +135,7 @@ do_pipe(num_iter, t)
 				exit(1);
 			}
 		}
-		*t = stop();
+		*t = stop(NULL);
 
 		kill(pid, 15);
 	} else {		/* child */

@@ -47,7 +47,7 @@ int 	do_memzero(int num_iter, clk_t *time);
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 unsigned int 	bytes;		/* the number of bytes to be written */
 
@@ -67,16 +67,16 @@ main(ac, av)
 			counter_argstring);
 		exit(1);
 	}
-	
+
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	bytes = parse_bytes(av[2]);
-	
+
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -99,7 +99,7 @@ main(ac, av)
 	do_memzero(niter, &totaltime);	/* get cached write bandwidth */
 
 	output_bandwidth(niter * bytes, totaltime);
-	
+
 	return (0);
 }
 
@@ -116,7 +116,7 @@ do_memzero(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * unsigned int bytes;
 	 */
@@ -144,7 +144,7 @@ do_memzero(num_iter, t)
 		bzero(mem, bytes);
 	}
 
-	*t = stop();		/* stop timing and record result */
+	*t = stop(NULL);	/* stop timing and record result */
 
 	free(mem);		/* free memory allocated */
 

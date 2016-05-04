@@ -24,7 +24,7 @@
  * name "HBench-OS".
  */
 
-/* 
+/*
  * lat_proc.c - process creation benchmarks
  *
  * Usage: lat_proc [null|simple|sh] [static|dynamic]
@@ -47,7 +47,7 @@ int do_pcreate();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 int	type;			/* 1 = null, 2 = simple, 3 = /bin/sh */
 int	dynamic;		/* 1 = dynamic; 0 = static */
@@ -82,12 +82,12 @@ main(ac, av)
 		dynamic = 0;
 	else
 		dynamic = 1;
-	
+
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -108,9 +108,9 @@ main(ac, av)
 	niter = 1;
 #endif
 	do_pcreate(niter, &totaltime);	/* get cached reread */
-	
+
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -146,7 +146,7 @@ clk_t
 null_proc(num_iter)
 	int num_iter;
 {
-	register int pid, i;		
+	register int pid, i;
 
 	/* start timing */
 	start();
@@ -165,14 +165,14 @@ null_proc(num_iter)
 				;
 		}
 	}
-	return (stop());
+	return (stop(NULL));
 }
 
 clk_t
 simple_proc(num_iter)
 	int num_iter;
 {
-	int pid, i;		
+	int pid, i;
 	char	*nav[2];
 
 	nav[0] = (dynamic ? PROG : PROG_S);
@@ -195,14 +195,14 @@ simple_proc(num_iter)
 				;
 		}
 	}
-	return (stop());
+	return (stop(NULL));
 }
 
 clk_t
 sh_proc(num_iter)
 	int num_iter;
 {
-	int pid, i;		
+	int pid, i;
 
 	start();
 	for (i = num_iter; i > 0; i--) {
@@ -213,7 +213,7 @@ sh_proc(num_iter)
 
 		    case 0:	/* child */
 			close(1);
-		    	execlp("/bin/sh", "sh", "-c", 
+		    	execlp("/bin/sh", "sh", "-c",
 			       (dynamic ? PROG : PROG_S), 0);
 			exit(1);
 
@@ -222,5 +222,5 @@ sh_proc(num_iter)
 				;
 		}
 	}
-	return (stop());
+	return (stop(NULL));
 }

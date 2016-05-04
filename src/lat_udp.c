@@ -47,7 +47,7 @@ int do_client();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 char 		*rhostname;	/* hostname of remote host */
 int		killserver = 0;	/* flag to tell client to kill server */
@@ -81,7 +81,7 @@ main(ac, av)
 		exit(0);
 	}
 
-	/* Starting client */	
+	/* Starting client */
 	if (av[2][0] == '-') {
 		killserver = 1;	/* signal client to kill server */
 		rhostname = &av[2][1];
@@ -94,7 +94,7 @@ main(ac, av)
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -103,7 +103,7 @@ main(ac, av)
 	 */
 	if (niter == 0) {
 		niter = gen_iterations(&do_client, clock_multiplier);
-		
+
 		printf("%d\n",niter);
 		return (0);
 	}
@@ -118,7 +118,7 @@ main(ac, av)
 	do_client(niter, &totaltime);	/* get TCP latency */
 
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -133,7 +133,7 @@ do_client(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * char *rhostname;
 	 * int killserver;
@@ -178,7 +178,7 @@ do_client(num_iter, t)
 			n++;
 		}
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	return (0);
 }

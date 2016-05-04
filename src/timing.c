@@ -49,7 +49,7 @@ typedef	unsigned int clk_t;	/* microseconds can be u_int's */
 #define CLKTSTR(x) 	atoi(x)
 #endif /* COUNTERS */
 
-clk_t	stop();
+clk_t stop(void *unused __attribute__((unused)));
 
 #ifdef CYCLE_COUNTER
 static internal_clk_t start_clk, stop_clk;
@@ -62,7 +62,7 @@ static struct timeval start_tv, stop_tv;
 #define OVERHEAD_TAILS		2
 clk_t timing_overhead = 0;
 
-/** 
+/**
  ** Timing functions
  **/
 
@@ -72,15 +72,15 @@ clk_t timing_overhead = 0;
  * We measure the counter overhead by starting and stopping 100 times,
  * then averaging the results. We do this 10 times and take the middle 8.
  */
-static int 
+static int
 clktcomp(const void *a, const void *b)
 {
         /* we assume at most a 30 bit difference! */
         return (int)((*((clk_t *)a)) - (*((clk_t *)b)));
 }
 
-void 
-init_timing() 
+void
+init_timing()
 {
 	int i,j;
 	clk_t *vals;
@@ -97,13 +97,13 @@ init_timing()
 
 	timing_overhead = 0;
 	start();		/* prime caches, etc */
-	stop();
+	stop(NULL);
 
 	for (i = OVERHEAD_OUTER_LOOPS-1; i >= 0; i--) {
 		vals[i] = 0;
 		for (j = OVERHEAD_INNER_LOOPS; j > 0; j--) {
 			start();
-			vals[i] += stop();
+			vals[i] += stop(NULL);
 		}
 		vals[i] /= OVERHEAD_INNER_LOOPS;
 	}
@@ -133,7 +133,7 @@ start()
 #endif
 
 #ifdef EVENT_COUNTERS
-	/*  
+	/*
 	 * We start the event counters *after* the cycle counter under the
 	 * assumption that the user is more interested in precise event
 	 * timing, otherwise why would they be using the counters at all?
@@ -146,7 +146,7 @@ start()
  * Stop timing and return real time in microseconds.
  */
 clk_t
-stop()
+stop(void *unused __attribute__((unused)))
 {
 #ifdef EVENT_COUNTERS
 	stop_eventcounters();
@@ -163,7 +163,7 @@ stop()
 	/* Sanity checking; prevent "negative" results */
 	if (stop_clk <= start_clk || (stop_clk-start_clk) <= timing_overhead)
 		return (0);
-	else 
+	else
 		return (((clk_t)(stop_clk - start_clk)) - timing_overhead);
 #else
 	tvsub(&tdiff, &stop_tv, &start_tv);
@@ -171,7 +171,7 @@ stop()
 	    (tdiff.tv_sec * 1000000 + tdiff.tv_usec) <= timing_overhead)
 		return (0);
 	else
-		return ((tdiff.tv_sec * 1000000 + tdiff.tv_usec) - 
+		return ((tdiff.tv_sec * 1000000 + tdiff.tv_usec) -
 			timing_overhead);
 #endif /* CYCLE_COUNTER */
 }
@@ -183,7 +183,7 @@ stop()
  * workfn(i, t) takes a number of iterations to run, and returns its
  * time in clk_t *t; workfn should return 0 on success, -1 on error.
  */
-unsigned int 
+unsigned int
 gen_iterations(workfn, clkmul)
 	int (*workfn)(int, clk_t *);
 	float clkmul;
@@ -194,7 +194,7 @@ gen_iterations(workfn, clkmul)
 
 	if (!workfn)
 		return 1;
-	
+
 	/* special-case the 1-iteration case for easier error-checking */
 	if ((*workfn)(1, &rtntime) != 0)
 		return (1);
@@ -222,7 +222,7 @@ gen_iterations(workfn, clkmul)
 }
 
 /*
- * Subtract two timevals 
+ * Subtract two timevals
  */
 void
 tvsub(tdiff, t1, t0)

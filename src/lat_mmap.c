@@ -52,7 +52,7 @@ int do_mmap();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 int		fd;		/* file descriptor of file to map */
 unsigned int 	size;		/* size of region to map */
@@ -71,7 +71,7 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 4) {
-		fprintf(stderr, "usage: %s%s iterations size file\n", 
+		fprintf(stderr, "usage: %s%s iterations size file\n",
 			av[0], counter_argstring);
 		exit(1);
 	}
@@ -91,7 +91,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -112,9 +112,9 @@ main(ac, av)
 	niter = 1;
 #endif
 	do_mmap(niter, &totaltime);	/* get cached reread */
-	
+
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -145,7 +145,7 @@ do_mmap(num_iter, t)
 		}
 		munmap(where, size);
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	return (0);
 }

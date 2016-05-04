@@ -61,14 +61,14 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 3) {
-		fprintf(stderr, "usage: %s%s iterations [install|handle]\n", 
+		fprintf(stderr, "usage: %s%s iterations [install|handle]\n",
 			av[0], counter_argstring);
 		exit(1);
 	}
 
 	/* parse command line parameters */
 	niter = atoi(av[1]);
-	if (!strcmp(av[2],"install")) 
+	if (!strcmp(av[2],"install"))
 		fn = &do_install;
 	else
 		fn = &do_handle;
@@ -77,7 +77,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -98,9 +98,9 @@ main(ac, av)
 	niter = 1;
 #endif
 	(*fn)(niter, &totaltime);	/* get latency */
-	
+
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 
@@ -117,8 +117,8 @@ do_install(num_iter, t)
 	int	i, me;
 	struct	sigaction sa, old;
 
-	/* 
-	 * Get my PID and set up signal handler 
+	/*
+	 * Get my PID and set up signal handler
 	 */
 	me = getpid();
 	sa.sa_handler = handler2;
@@ -132,7 +132,7 @@ do_install(num_iter, t)
 		sigemptyset(&sa.sa_mask);	/* don't care */
 		sa.sa_flags = 0;		/* don't care */
 		sigaction(SIGUSR1, &sa, &old);
-		*t = stop();
+		*t = stop(NULL);
 		sigaction(SIGUSR1, &old, 0);
 		return (0);
 	}
@@ -145,7 +145,7 @@ do_install(num_iter, t)
 		sigaction(SIGUSR1, &sa, &old);
 		sigaction(SIGUSR1, &old, 0);
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	return(0);
 }
@@ -159,8 +159,8 @@ do_handle(num_iter, t)
 	clk_t 	overhead;
 	struct	sigaction sa;
 
-	/* 
-	 * Get my PID and set up signal handler 
+	/*
+	 * Get my PID and set up signal handler
 	 */
 	me = getpid();
 	sa.sa_handler = handler2;
@@ -169,14 +169,14 @@ do_handle(num_iter, t)
 	sigaction(SIGUSR1, &sa, 0);
 
 	/*
-	 * First we measure the system call overhead for kill by using a 
+	 * First we measure the system call overhead for kill by using a
 	 * null signal
 	 */
 	start();
 	for (i = num_iter; i > 0; i--) {
 		kill(me, 0);
 	}
-	overhead = stop();
+	overhead = stop(NULL);
 
 	/*
 	 * Now make the real measurement
@@ -185,7 +185,7 @@ do_handle(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		kill(me, SIGUSR1);
 	}
-	*t = stop();
+	*t = stop(NULL);
 	*t -= overhead;
 
 	return (0);

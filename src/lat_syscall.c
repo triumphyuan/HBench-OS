@@ -64,9 +64,8 @@ int do_getpid();
  */
 int	fd;			/* file descriptor of /dev/null */
 
-main(ac, av)
-	int ac;
-	char  **av;
+int
+main(int ac, char **av)
 {
 	clk_t		totaltime;
 	unsigned int	niter;
@@ -166,7 +165,7 @@ do_writedevnull(num_iter, t)
 			exit(1);
 		}
 	}
-	*t = stop(c);
+	*t = stop((void *)(long)c);
 
 	return (0);
 }
@@ -180,9 +179,7 @@ void	handler() { caught++; }
 void	handler2() { caught++; }
 
 int
-do_sigaction(num_iter, t)
-	int 	num_iter;
-	clk_t	*t;
+do_sigaction(int num_iter, clk_t *t)
 {
 	int	i, me;
 	struct	sigaction sa, old;
@@ -203,7 +200,7 @@ do_sigaction(num_iter, t)
 	if (num_iter == 1) {	/* special case for cold cache */
 		start();
 		sigaction(SIGUSR1, &sa, &old);
-		*t = stop();
+		*t = stop(NULL);
 		sigaction(SIGUSR1, &old, 0);
 		return (0);
 	}
@@ -213,7 +210,7 @@ do_sigaction(num_iter, t)
 		sigaction(SIGUSR1, &sa, &old);
 		sigaction(SIGUSR1, &old, 0);
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	return(0);
 }
@@ -222,9 +219,7 @@ do_sigaction(num_iter, t)
  * Call gettimeofday()
  */
 int
-do_gettimeofday(num_iter, t)
-	int num_iter;
-	clk_t *t;
+do_gettimeofday(int num_iter, clk_t *t)
 {
 	register int i;
 	struct timeval tv;
@@ -233,7 +228,7 @@ do_gettimeofday(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		gettimeofday(&tv, NULL);
 	}
-	*t = stop(tv);
+	*t = stop(&tv);
 
 	return (0);
 }
@@ -274,7 +269,7 @@ do_getrusage(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		getrusage(RUSAGE_SELF, &ru);
 	}
-	*t = stop(ru);
+	*t = stop(&ru);
 
 	return (0);
 }
@@ -295,7 +290,7 @@ do_getpid(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		p += getpid();
 	}
-	*t = stop(p);
+	*t = stop((void *)(long)p);
 
 	return (0);
 }

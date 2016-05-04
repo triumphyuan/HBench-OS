@@ -29,13 +29,13 @@
  *
  * Usage: mhz [-c]
  *
- * The sparc specific code is to get around the double-pumped ALU in the 
- * SuperSPARC that can do two adds in one clock. Apparently, only 
+ * The sparc specific code is to get around the double-pumped ALU in the
+ * SuperSPARC that can do two adds in one clock. Apparently, only
  * SuperSPARC does this.
  * Thanks to John Mashey (mash@sgi.com) for explaining this.
  *
- * The AIX specific code is because the C compiler on rs6000s does not 
- * respect the register directive.  "a" below is a stack variable and 
+ * The AIX specific code is because the C compiler on rs6000s does not
+ * respect the register directive.  "a" below is a stack variable and
  * there are two instructions per increment instead of one.
  * Please note that this may not be correct for other AIX systems.
  *
@@ -69,12 +69,12 @@ main(ac, av)
 	if (ac >= 3) {
 		fprintf(stderr, "Usage: %s [-c]\n", av[0]);
 	}
-	
+
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 	clock_multiplier = 1.0;
 
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second.
 	 */
@@ -104,7 +104,7 @@ main(ac, av)
 	totaltime -= overhead;
 
 	mhz = ((double)niter*1000.0) / (double) totaltime;
-	
+
 	if (ac == 2 && !strcmp(av[1], "-c")) {
 		printf("%.4f\n", 1000 / mhz);
 	} else {
@@ -136,10 +136,10 @@ do_ops(num_iter, t)
 	int num_iter;
 	clk_t *t;
 {
-	register a, i;
+	register int a, i;
 
 	a = 1024;
-	
+
 	/* Start timing */
 	start();
 
@@ -148,7 +148,7 @@ do_ops(num_iter, t)
 		H H H H H
 		H H H H H
 	}
-	*t = stop(a);
+	*t = stop((void *)a);
 
 	return (0);
 }
@@ -161,10 +161,10 @@ do_null(num_iter, t)
 	int num_iter;
 	clk_t *t;
 {
-	register a, i;
+	register int a, i;
 
 	a = 1024;
-	
+
 	/* Start timing */
 	start();
 
@@ -172,7 +172,7 @@ do_null(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		;
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	return (0);
 }
@@ -197,7 +197,7 @@ do_overhead(num_iter, t)
 		do_null(num_iter, &val);
 		centeravg_add(val);
 	}
-	
+
 	centeravg_done(t);
 
 	return (0);

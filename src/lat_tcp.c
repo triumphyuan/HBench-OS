@@ -166,7 +166,7 @@ do_client(num_iter, t)
 		write(sock, &c, 1);
 		read(sock, &c, 1);
 	}
-	*t = stop();
+	*t = stop(NULL);
 
 	close(sock);
 
