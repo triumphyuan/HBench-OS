@@ -132,9 +132,7 @@ main(ac, av)
  * Worker function #1: does the actual measurement.
  */
 int
-do_ops(num_iter, t)
-	int num_iter;
-	clk_t *t;
+do_ops(int num_iter, clk_t *t)
 {
 	register int a, i;
 
@@ -148,7 +146,7 @@ do_ops(num_iter, t)
 		H H H H H
 		H H H H H
 	}
-	*t = stop((void *)a);
+	*t = stop((void *)(long)a);
 
 	return (0);
 }
@@ -157,9 +155,7 @@ do_ops(num_iter, t)
  * Worker function #2: measures the loop overhead
  */
 int
-do_null(num_iter, t)
-	int num_iter;
-	clk_t *t;
+do_null(int num_iter, clk_t *t)
 {
 	register int a, i;
 
@@ -184,9 +180,7 @@ do_null(num_iter, t)
 #define OVERHEADAVG_LOOPS	20
 #define OVERHEADAVG_TAILS	0.2
 int
-do_overhead(num_iter, t)
-	int num_iter;
-	clk_t *t;
+do_overhead(int num_iter, clk_t *t)
 {
 	int 	i;
 	clk_t	val;

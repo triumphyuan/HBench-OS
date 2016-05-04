@@ -48,11 +48,12 @@ char	*id = "$Id: bw_mmap_rd.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
 #include "common.c"
 
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
 /*
- * Use unsigned int: supposedly the "optimal" transfer size for a given 
+ * Use unsigned int: supposedly the "optimal" transfer size for a given
  * architecture.
  */
 #ifndef TYPE
@@ -64,8 +65,8 @@ char	*id = "$Id: bw_mmap_rd.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
 #define	CHK(x)		if ((int)(x) == -1) { perror("x"); exit(1); }
 
-/* 
- * The worker function. We don't really need it here; it is just to make 
+/*
+ * The worker function. We don't really need it here; it is just to make
  * the structure parallel the other tests.
  */
 int 	do_mmapread();
@@ -73,7 +74,7 @@ int 	do_mmapread();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 
 unsigned int 	bytes;		/* the number of bytes to be read */
@@ -93,11 +94,11 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 4) {
-		fprintf(stderr, "Usage: %s%s ignored size file\n", 
+		fprintf(stderr, "Usage: %s%s ignored size file\n",
 			av[0], counter_argstring);
 		exit(1);
 	}
-	
+
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	bytes = parse_bytes(av[2]);
@@ -120,7 +121,7 @@ main(ac, av)
 		printf("<error>\n");
 		exit(1);
 	}
-	
+
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 
@@ -140,16 +141,16 @@ main(ac, av)
 	do_mmapread(1, &totaltime);	/* get cached reread */
 
 	output_bandwidth(xferred, totaltime);
-	
+
 	return (0);
 }
 
-/* 
+/*
  * This function does all the work. It reads "bytes" from "fd"
  * "num_iter" times via mmap and reports the total time in whatever
  * unit our clock is using.
  *
- * Note that num_iter > 1 is not useful in dealing with low-resolution 
+ * Note that num_iter > 1 is not useful in dealing with low-resolution
  * timers, since each loop is timed individually.
  *
  * Returns 0 if the benchmark was successful, and -1 if there were too many
@@ -160,7 +161,7 @@ do_mmapread(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * unsigned int bytes;
 	 * int fd;
@@ -173,19 +174,19 @@ do_mmapread(num_iter, t)
 
 	/* Try to map in the file */
 #ifdef MAP_FILE
-	CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, MAP_FILE|MAP_SHARED, 
+	CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, MAP_FILE|MAP_SHARED,
 				 fd, 0));
 #else
 	CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, MAP_SHARED, fd, 0));
 #endif
 	p = where;
-	
+
 #define	TWENTY	sum += p[0]+p[1]+p[2]+p[3]+p[4]+p[5]+p[6]+p[7]+p[8]+p[9]+ \
 		p[10]+p[11]+p[12]+p[13]+p[14]+p[15]+p[16]+p[17]+p[18]+p[19]; \
 		p += 20;
 #define	HUNDRED	TWENTY TWENTY TWENTY TWENTY TWENTY
 
-	sum = 0;	
+	sum = 0;
 	end = where + (bytes/SIZE) - 200;
 	*t = 0;
 
@@ -193,10 +194,10 @@ do_mmapread(num_iter, t)
 	for (i = num_iter; i > 0; i--) {
 		munmap((char *)where, bytes);
 #ifdef MAP_FILE
-		CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, 
+		CHK(where = (TYPE *)mmap(0, bytes, PROT_READ,
 					 MAP_FILE|MAP_SHARED, fd, 0));
 #else
-		CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, MAP_SHARED, 
+		CHK(where = (TYPE *)mmap(0, bytes, PROT_READ, MAP_SHARED,
 					 fd, 0));
 #endif
 		start();

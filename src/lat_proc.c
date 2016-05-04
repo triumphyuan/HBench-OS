@@ -36,6 +36,8 @@
  */
 char	*id = "$Id: lat_proc.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
+#include <sys/wait.h>
+
 #include	"common.c"
 
 #define	PROG_S "/tmp/hello-s"

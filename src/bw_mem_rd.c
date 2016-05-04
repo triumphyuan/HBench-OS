@@ -40,7 +40,7 @@ char	*id = "$Id: bw_mem_rd.c,v 1.6 1997/06/27 00:33:58 abrown Exp $\n";
 #include "common.c"
 
 /*
- * Use unsigned int: supposedly the "optimal" transfer size for a given 
+ * Use unsigned int: supposedly the "optimal" transfer size for a given
  * architecture.
  */
 #ifndef TYPE
@@ -56,7 +56,7 @@ int 	do_memread(int num_iter, clk_t *time);
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 unsigned int 	bytes;		/* the number of bytes to be read */
 
@@ -77,11 +77,11 @@ main(ac, av)
 			counter_argstring);
 		exit(1);
 	}
-	
+
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	bytes = parse_bytes(av[2]);
-	
+
 	/*
 	 * The gory calculation on the next line computes the actual number of
 	 * bytes tranferred by the unrolled loop.
@@ -98,7 +98,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -121,8 +121,30 @@ main(ac, av)
 	do_memread(niter, &totaltime);	/* get cached reread */
 
 	output_bandwidth(niter * xferred, totaltime);
-	
+
 	return (0);
+}
+
+void
+do_loop(int num_iter, TYPE *mem, TYPE *end_in)
+{
+	volatile unsigned long acc;
+	register TYPE *end = end_in;
+
+#define	TWENTY	acc += p[0]+p[1]+p[2]+p[3]+p[4]+p[5]+p[6]+p[7]+p[8]+p[9]+ \
+		p[10]+p[11]+p[12]+p[13]+p[14]+p[15]+p[16]+p[17]+p[18]+p[19]; \
+		p += 20;
+#define	HUNDRED	TWENTY TWENTY TWENTY TWENTY TWENTY
+
+	acc = 0;
+
+	/* Read num_iter times */
+	for (int i = num_iter; i > 0; i--) {
+		for (TYPE *p = mem; p < end; ) {
+			HUNDRED
+			HUNDRED
+		}
+	}
 }
 
 /*
@@ -138,15 +160,12 @@ do_memread(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * unsigned int bytes;
 	 */
-	register TYPE *p;
-	register unsigned long acc;
-	register TYPE *end;
-        int i;
-        TYPE   *mem;
+	TYPE *end;
+        TYPE *mem;
 
 	/* Allocate the buffer to be used for reading */
         mem = (TYPE *)malloc(bytes + 16384);
@@ -159,27 +178,14 @@ do_memread(num_iter, t)
 	bzero(mem, bytes);	/* Touch all of the pages */
 #endif
 
-#define	TWENTY	acc += p[0]+p[1]+p[2]+p[3]+p[4]+p[5]+p[6]+p[7]+p[8]+p[9]+ \
-		p[10]+p[11]+p[12]+p[13]+p[14]+p[15]+p[16]+p[17]+p[18]+p[19]; \
-		p += 20;
-#define	HUNDRED	TWENTY TWENTY TWENTY TWENTY TWENTY
-
-	acc = 0;
-
 	end = mem + (bytes/SIZE) - 200;
 
 	/* Start timing */
 	start();
 
-	/* Read num_iter times */
-	for (i = num_iter; i > 0; i--) {
-		for (p = mem; p < end; ) {
-			HUNDRED
-			HUNDRED
-		}
-	}
+	do_loop(num_iter, mem, end);
 
-	*t = stop(acc);		/* stop timing and record result */
+	*t = stop(NULL);	/* stop timing and record result */
 
 	free(mem);		/* free memory allocated */
 

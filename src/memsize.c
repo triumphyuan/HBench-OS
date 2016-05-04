@@ -36,6 +36,9 @@
  */
 char	*id = "$Id: memsize.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
+void timeit(char *where, int size);
+void touch(char *p, char *end, int range);
+
 #include "common.c"
 
 #define	CHK(x)	if ((x) == -1) { perror("x"); exit(1); }
@@ -91,8 +94,8 @@ main(ac, av)
 	exit(0);
 }
 
-timeit(where, size)
-	char	*where;
+void
+timeit(char *where, int size)
 {
 	clk_t	lat = (clk_t) 0;
 	int	n;
@@ -122,6 +125,7 @@ timeit(where, size)
 	printf("%d\n", (size>>20));
 }
 
+void
 touch(char *p, char *end, int range)
 {
 	char	*tmp = p;

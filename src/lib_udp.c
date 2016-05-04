@@ -12,14 +12,16 @@
 #include	<netdb.h>
 #include	<arpa/inet.h>
 
+void sock_optimize(int sock, int rdwr);
+
 /*
  * Get a UDP socket, bind it, figure out the port,
  * and advertise the port as program "prog".
  *
  * XXX - it would be nice if you could advertise ascii strings.
  */
-udp_server(prog, rdwr)
-	u_long	prog;
+int
+udp_server(u_long prog, int rdwr)
 {
 	int	sock, namelen;
 	struct	sockaddr_in s;
@@ -57,6 +59,7 @@ udp_server(prog, rdwr)
 /*
  * Unadvertise the socket
  */
+void
 udp_done(prog)
 {
 #ifndef	NO_PORTMAPPER
@@ -68,9 +71,8 @@ udp_done(prog)
  * "Connect" to the UCP socket advertised as "prog" on "host" and
  * return the connected socket.
  */
-udp_connect(host, prog, rdwr)
-	char	*host;
-	u_long	prog;
+int
+udp_connect(char *host, u_long prog, int rdwr)
 {
 	struct hostent *h;
 	struct sockaddr_in sin;
@@ -110,7 +112,8 @@ udp_connect(host, prog, rdwr)
 /*
  * This is identical in lib_tcp.c and lib_udp.c
  */
-sock_optimize(sock, rdwr)
+void
+sock_optimize(int sock, int rdwr)
 {
 	if (rdwr == SOCKOPT_READ || rdwr == SOCKOPT_RDWR) {
 		int	sockbuf = SOCKBUF;

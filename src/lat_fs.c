@@ -43,6 +43,9 @@ char	*id = "$Id: lat_fs.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 #include "common.c"
 #include <stdlib.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /* Worker function */
 int do_create();		/* wrapper that does timing */

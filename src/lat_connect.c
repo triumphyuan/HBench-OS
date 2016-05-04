@@ -46,6 +46,8 @@ char	*id = "$Id: lat_connect.c,v 1.7 1997/06/27 00:33:58 abrown Exp $\n";
 
 /* Worker function */
 int do_client();
+void server_main(int ac, char **av);
+
 
 /*
  * Global variables: these are the parameters required by the worker routine.
@@ -167,8 +169,8 @@ do_client(num_iter, t)
 	return (0);
 }
 
-server_main(ac, av)
-	char  **av;
+void
+server_main(int ac, char **av)
 {
 	int     newsock, sock;
 	char	c;

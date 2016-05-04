@@ -43,6 +43,9 @@ char	*id = "$Id: lat_mmap.c,v 1.7 1997/06/27 00:33:58 abrown Exp $\n";
 
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define	CHK(x)		if ((int)(x) == -1) { perror("x"); exit(1); }
 

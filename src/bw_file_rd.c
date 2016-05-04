@@ -40,14 +40,16 @@ char	*id = "$Id: bw_file_rd.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 
 #include "common.c"
 
-#include <unistd.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define	CHK(x)		if ((int)(x) == -1) { perror("x"); exit(1); }
 #define	MIN(a, b)	((a) < (b) ? (a) : (b))
 
-/* 
- * The worker function. We don't really need it here; it is just to make 
+/*
+ * The worker function. We don't really need it here; it is just to make
  * the structure parallel the other tests.
  */
 int 	do_fileread();
@@ -55,7 +57,7 @@ int 	do_fileread();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 
 unsigned int 	bytes;		/* the number of bytes to be read */
@@ -75,17 +77,17 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 5) {
-		fprintf(stderr, "Usage: %s%s ignored sizetoread readincrement file\n", 
+		fprintf(stderr, "Usage: %s%s ignored sizetoread readincrement file\n",
 			av[0], counter_argstring);
 		exit(1);
 	}
-	
+
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	bytes = parse_bytes(av[2]);
 	bufsize = parse_bytes(av[3]);
 	CHK(fd = open(av[4], 0));
-	
+
 	/* Get the number of iterations */
 	if (niter == 0) {
 		/* We always do 1 iteration here */
@@ -104,7 +106,7 @@ main(ac, av)
 #endif
 	do_fileread(1, &totaltime);	/* get cached reread */
 	output_bandwidth(bytes, totaltime);
-	
+
 	return (0);
 }
 
@@ -121,7 +123,7 @@ do_fileread(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters 
+	 * 	Global parameters
 	 *
 	 * unsigned int bytes;
 	 * unsigned int bufsize;
@@ -131,7 +133,7 @@ do_fileread(num_iter, t)
 	unsigned int j, size;
 	int n;
 	char *buf = (char *) malloc(bufsize);
-	
+
 	if (!buf) {
 		perror("malloc");
 		exit(1);
@@ -145,8 +147,8 @@ do_fileread(num_iter, t)
 		p[10]+p[11]+p[12]+p[13]+p[14]+p[15]; p += 16;
 #define	SIXTYFOUR	SIXTEEN SIXTEEN SIXTEEN SIXTEEN
 
-	/* 
-	 * Now we do the real work 
+	/*
+	 * Now we do the real work
 	 */
 	sum = 0;
 	size = bytes * num_iter;
@@ -169,8 +171,7 @@ do_fileread(num_iter, t)
 		size -= n;
 	}
 	*t = stop(sum);		/* stop the clocks, return the value */
-	
+
 	free(buf);
 	return (0);		/* success */
 }
-

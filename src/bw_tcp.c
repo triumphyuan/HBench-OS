@@ -46,8 +46,11 @@
  */
 char	*id = "$Id: bw_tcp.c,v 1.7 1997/06/27 00:33:58 abrown Exp $\n";
 
+#include <sys/wait.h>
+
 #include "common.c"
 #include "lib_tcp.c"
+
 
 /*
  * General philosophy for getting reproducible numbers: we transfer
@@ -62,6 +65,8 @@ char	*id = "$Id: bw_tcp.c,v 1.7 1997/06/27 00:33:58 abrown Exp $\n";
 
 /* The worker function */
 int 	do_client(int num_iter, clk_t *time);
+void    server_main(void);
+void    absorb(int control, int data);
 
 /*
  * Global variables: these are the parameters required by the worker routine.
@@ -262,7 +267,8 @@ child(dummy)
 	signal(SIGCHLD, child);
 }
 
-server_main()
+void
+server_main(void)
 {
 	int	data, control, newdata, newcontrol;
 
@@ -295,7 +301,8 @@ server_main()
  * Read that many bytes on the data socket.
  * Write the performance results on the control socket.
  */
-absorb(control, data)
+void
+absorb(int control, int data)
 {
 	int	nread, save, nbytes;
 	char	*buf = valloc(bufsize);

@@ -39,6 +39,7 @@ char	*id = "$Id: lat_ctx.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
 #include "common.c"
 #include <sys/mman.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 
 #define MAX_PROCS		128

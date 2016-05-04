@@ -38,6 +38,9 @@
  */
 char	*id = "$Id: lat_fslayer.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "common.c"
 
 /* Worker function */
@@ -46,7 +49,7 @@ int do_syscall();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function 
+ * lists and the gen_iterations function
  */
 int	fd;			/* file descriptor of /dev/null */
 
@@ -66,7 +69,7 @@ main(ac, av)
 			counter_argstring);
 		exit(1);
 	}
-	
+
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	fd = open("/dev/null", 1);
@@ -79,7 +82,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/* 
+	/*
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -102,7 +105,7 @@ main(ac, av)
 	do_syscall(niter, &totaltime);	/* get cached reread */
 
 	output_latency(totaltime, niter);
-	
+
 	return (0);
 }
 

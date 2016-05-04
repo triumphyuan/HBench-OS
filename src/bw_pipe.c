@@ -36,6 +36,8 @@
  */
 char	*id = "$Id: bw_pipe.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 
+#include <sys/wait.h>
+
 #include "common.c"
 
 extern	void	exit();		/* for lint on SunOS 4.x */

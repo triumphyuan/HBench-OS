@@ -43,6 +43,7 @@ char	*id = "$Id: lat_udp.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 #include "lib_udp.c"
 /* Worker functions */
 int do_client();
+void server_main(void);
 
 /*
  * Global variables: these are the parameters required by the worker routine.
@@ -183,7 +184,8 @@ do_client(num_iter, t)
 	return (0);
 }
 
-server_main()
+void
+server_main(void)
 {
 	int     sock, sent, namelen, seq = 0;
 	struct sockaddr it;
