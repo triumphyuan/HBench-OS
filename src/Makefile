@@ -54,11 +54,11 @@
 
 SHELL=/bin/sh
 
-CC = musl-gcc
-PLATFORM=`$(SHELL) ../scripts/config.guess`
-ARCH=`$(SHELL) ../scripts/config.guess | sed 's/-.*-.*$$//'`
-OS=`$(SHELL) ../scripts/config.guess | sed 's/^.*-.*-//'`
-OSROOT=`$(SHELL) ../scripts/config.guess | sed 's/^.*-.*-//' | sed 's/[0-9].*$$//'`
+CC       = musl-gcc
+PLATFORM = $(shell ../scripts/config.guess)
+ARCH     = $(shell echo $(PLATFORM) | sed 's/-.*-.*$$//')
+OS       = $(shell echo $(PLATFORM) | sed 's/^.*-.*-//')
+OSROOT   = $(shell echo $(PLATFORM) | sed 's/^.*-.*-//' | sed 's/[0-9].*$$//')
 
 all:
 	@$(MAKE) BINDIR=../bin/$(OS)-$(ARCH) $(OSROOT)
