@@ -54,17 +54,8 @@
 lat_tcp
 
 # system call latency
-lat_syscall:write:getpid
+lat_syscall:getpid
 
+lat_proc
 
-# memory read bandwidth
-bw_mem_rd:2k:4k
-
-# memory write bandwidth
-bw_mem_wr:2k:4k
-
-
-bw_mem_cp:2k libc aligned:2k libc unaligned:2k unrolled aligned:2k unrolled unaligned
-bw_mem_cp:4k libc aligned:4k libc unaligned:4k unrolled aligned:4k unrolled unaligned
-
-bw_file_rd:64k 64k:128k
+lat_pipe
