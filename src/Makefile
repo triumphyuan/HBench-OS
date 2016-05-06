@@ -89,7 +89,7 @@ COMPILE=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS)
 #####################################
 
 # The following don't need special handling.
-freebsd netbsd openbsd sunos linux:
+freebsd netbsd openbsd sunos linux browsix:
 	@$(MAKE) binaries
 
 bsdi:
