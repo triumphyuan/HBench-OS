@@ -56,6 +56,6 @@ lat_tcp
 # system call latency
 lat_syscall:getpid
 
-lat_proc
+lat_proc:null static
 
 lat_pipe
