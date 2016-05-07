@@ -139,6 +139,8 @@ do_pipe(num_iter, t)
 
 		kill(pid, 15);
 	} else {		/* child */
+		close(p1[1]);
+		close(p2[0]);
 		for ( ;; ) {
 			if (read(p1[0], &c, 1) != 1 ||
 			    write(p2[1], &c, 1) != 1) {
