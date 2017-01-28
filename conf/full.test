@@ -51,11 +51,13 @@
 # Quick latency tests #
 #######################
 
-lat_tcp
-
 # system call latency
 lat_syscall:getpid
 
-lat_proc:null static
+lat_fslayer
 
-lat_pipe
+lat_fs:create 1024
+
+lat_tcp
+
+lat_proc:null static
