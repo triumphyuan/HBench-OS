@@ -426,7 +426,7 @@ EOF
 	  # Either a pre-BFD a.out linker (linuxoldld) or one that does not give us
 	  # useful --help.  Gcc wants to distinguish between linuxoldld and linuxaout.
 	  test ! -d /usr/lib/ldscripts/. \
-	    && echo "${UNAME_MACHINE}-pc-linux" && exit 0
+	    && echo "${UNAME_MACHINE}-pc-linux.oldld" && exit 0
 	  # Determine whether the default compiler is a.out or elf
 	  cat >dummy.c <<EOF
 main(argc, argv)

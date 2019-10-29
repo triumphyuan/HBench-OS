@@ -43,10 +43,9 @@
 #               the hostname
 # summary	produce a summary version of all stored results
 
-SHELL    = /bin/bash
-PLATFORM = $(shell ../scripts/config.guess)
-ARCH     = $(shell echo $(PLATFORM) | sed 's/-.*-.*$$//')
-HOSTNAME = `hostname | sed 's/\..*$$//'`
+SHELL=/bin/sh
+ARCH=`$(SHELL) ./scripts/config.guess | sed 's/-.*-.*$$//'`
+HOSTNAME=`hostname | sed 's/\..*$$//'`
 
 build:
 	@cd src && $(MAKE)
@@ -74,3 +73,4 @@ run:
 
 summary:
 	cd Results && $(MAKE) summary
+

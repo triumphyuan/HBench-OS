@@ -37,12 +37,12 @@
 #
 #     lat_proc:simple static:simple dynamic
 #
-# Note that there is no trailing ":", even if the benchmark takes no
+# Note that there is no trailing ":", even if the benchmark takes no 
 # parameters.
 #
 # This file is parsed automatically by hbench/scripts/maindriver; the parsing
 # engine is not particularly robust with syntax that does not conform to the
-# above, so undefined behavior may result if the specified syntax is not
+# above, so undefined behavior may result if the specified syntax is not 
 # followed.
 
 # FULL TEST SUITE FOR HBENCH-OS
@@ -52,12 +52,143 @@
 #######################
 
 # system call latency
-lat_syscall:getpid
+lat_syscall:sigaction:gettimeofday:sbrk:getrusage:write:getpid
 
+# signal handler latency 
+lat_sig:install:handle
+
+# file system invocation (VFS) overhead
 lat_fslayer
 
-lat_fs:create 1024
+# pipe latency
+lat_pipe
 
+# process creation latency
+lat_proc:null dummy:simple dynamic:sh dynamic:simple static:sh static
+
+# mmap latency
+lat_mmap:4k:8k:32k:64k:256k:512k:1m:2m:3m:4m:8m:16m:32m:64m
+
+###################
+# Bandwidth tests #
+###################
+
+# memory read bandwidth
+bw_mem_rd:2k:4k:8k:16k:32k:64k:128k:256k:512k:1m:2m:4m:8m:16m:32m:64m
+
+# memory write bandwidth
+bw_mem_wr:2k:4k:8k:16k:32k:64k:128k:256k:512k:1m:2m:4m:8m:16m:32m:64m
+
+# memory zero bandwidth (useful for machines with special
+# hardware to handle memory block transfer)
+bw_bzero:2k:4k:8k:16k:32k:64k:128k:256k:512k:1m:2m:4m:8m:16m:32m:64m
+
+# memory copy bandwidth
+bw_mem_cp:2k libc aligned:2k libc unaligned:2k unrolled aligned:2k unrolled unaligned
+bw_mem_cp:4k libc aligned:4k libc unaligned:4k unrolled aligned:4k unrolled unaligned
+bw_mem_cp:8k libc aligned:8k libc unaligned:8k unrolled aligned:8k unrolled unaligned
+bw_mem_cp:16k libc aligned:16k libc unaligned:16k unrolled aligned:16k unrolled unaligned
+bw_mem_cp:32k libc aligned:32k libc unaligned:32k unrolled aligned:32k unrolled unaligned
+bw_mem_cp:64k libc aligned:64k libc unaligned:64k unrolled aligned:64k unrolled unaligned
+bw_mem_cp:128k libc aligned:128k libc unaligned:128k unrolled aligned:128k unrolled unaligned
+bw_mem_cp:256k libc aligned:256k libc unaligned:256k unrolled aligned:256k unrolled unaligned
+bw_mem_cp:512k libc aligned:512k libc unaligned:512k unrolled aligned:512k unrolled unaligned
+bw_mem_cp:1m libc aligned:1m libc unaligned:1m unrolled aligned:1m unrolled unaligned
+bw_mem_cp:2m libc aligned:2m libc unaligned:2m unrolled aligned:2m unrolled unaligned
+bw_mem_cp:4m libc aligned:4m libc unaligned:4m unrolled aligned:4m unrolled unaligned
+bw_mem_cp:8m libc aligned:8m libc unaligned:8m unrolled aligned:8m unrolled unaligned
+bw_mem_cp:16m libc aligned:16m libc unaligned:16m unrolled aligned:16m unrolled unaligned
+bw_mem_cp:32m libc aligned:32m libc unaligned:32m unrolled aligned:32m unrolled unaligned
+bw_mem_cp:64m libc aligned:64m libc unaligned:64m unrolled aligned:64m unrolled unaligned
+
+# file reread (from buffer cache) bandwidth. In this set of tests, we
+# do two series. The first holds the transfer buffer size fixed at
+# 32k/64k/1m while varying the file size, while the other fixes the
+# file size at 512k/1m/2m and varies the transfer buffer size.
+
+#   32k transfer buffer, file sizes from 32k to 64m
+bw_file_rd:32k 32k:64k 32k:128k 32k:256k 32k:512k 32k:1m 32k:2m 32k:4m 32k:8m 32k:16m 32k:32m 32k:64m 32k
+
+#   64k transfer buffer, file sizes from 64k to 64m
+bw_file_rd:64k 64k:128k 64k:256k 64k:512k 64k:1m 64k:2m 64k:4m 64k:8m 64k:16m 64k:32m 64k:64m 64k
+
+#   1m transfer buffer, file sizes from 1m to 64m
+bw_file_rd:1m 1m:2m 1m:3m 1m:4m 1m:5m 1m:6m 1m:7m 1m:8m 1m:16m 1m:32m 1m:64m 1m
+
+#   512k file, transfer sizes from 4k to 512k (note: duplicates from first
+#              series omitted)
+bw_file_rd:512k 4k:512k 8k:512k 16k:512k 128k:512k 256k:512k 512k
+
+#   1m file, transfer sizes from 4k to 1m
+bw_file_rd:1m 4k:1m 8k:1m 16k:1m 32k:1m 64k:1m 128k:1m 256k:1m 512k:1m 1m
+
+#   2m file, transfer sizes from 4k to 2m
+bw_file_rd:2m 4k:2m 8k:2m 16k:2m 32k:2m 64k:2m 128k:2m 256k:2m 512k:2m 1m:2m 2m
+
+# mmap'd file read bandwidth
+bw_mmap_rd:4k:8k:16k:32k:64k:128k:256k:512k:1m:2m:4m:8m:16m:32m:64m
+
+# pipe bandwidth
+#   4MB is always transferred; parameter is the buffer size used (max 4m)
+bw_pipe:4k:8k:16k:32k:64k:128k:256k:512k:1m:2m:4m
+
+#################
+# Network tests #
+#################
+
+# TCP bandwidth
+#     Parameter is request buffer size. Edit the .run file to configure
+#     remote execution. Note that if cycle- or event-counters are being
+#     used with remote measurement, both machines must have the same
+#     clock rate. See src/bw_tcp.c for details on circumventing this
+#     restriction.
+bw_tcp:4k:8k:32k:64k:128k:512k:1m
+
+# TCP connect latency
+lat_connect
+
+# TCP communications latency
 lat_tcp
 
-lat_proc:null static
+# UDP communications latency
+lat_udp
+
+# RPC communications latency
+lat_rpc:udp:tcp
+
+################################
+# Time-consuming latency tests #
+################################
+
+# File system latency
+lat_fs:create 0:create 1024:create 4096:create 10240
+lat_fs:delforw 0:delforw 1024:delforw 4096:delforw 10240
+lat_fs:delrev 0:delrev 1024:delrev 4096:delrev 10240
+lat_fs:delrand 0:delrand 1024:delrand 4096:delrand 10240
+
+# Pure Context switch latency, without cache conflict resolution time
+#    first parameter is footprint, second parameter is #procs
+#
+# XXX event counters do not have overheads removed in this or in lat_ctx2
+lat_ctx:0k 2:0k 4:0k 8:0k 16:0k 20
+lat_ctx:2k 2:2k 4:2k 8:2k 16:2k 20
+lat_ctx:4k 2:4k 4:4k 8:4k 16:4k 20
+lat_ctx:8k 2:8k 4:8k 8:8k 16:8k 20
+lat_ctx:16k 2:16k 4:16k 8:16k 16:16k 20
+lat_ctx:32k 2:32k 4:32k 8:32k 16:32k 20
+lat_ctx:64k 2:64k 4:64k 8:64k 16:64k 20
+
+# Context switch latency, including cache conflict resolution/fill time.
+#    Useful for evaluating OS's page coloring policy when compared with
+#    results from above.
+lat_ctx2:0k 2:0k 4:0k 8:0k 16:0k 20
+lat_ctx2:2k 2:2k 4:2k 8:2k 16:2k 20
+lat_ctx2:4k 2:4k 4:4k 8:4k 16:4k 20
+lat_ctx2:8k 2:8k 4:8k 8:8k 16:8k 20
+lat_ctx2:16k 2:16k 4:16k 8:16k 16:16k 20
+lat_ctx2:32k 2:32k 4:32k 8:32k 16:32k 20
+lat_ctx2:64k 2:64k 4:64k 8:64k 16:64k 20
+
+# Memory read latency
+# XXX event counters do not have overheads removed here
+lat_mem_rd:8:16:32:64:128:256:512:1024:2048:4096:8192:16384:32768:65536

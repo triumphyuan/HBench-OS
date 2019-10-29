@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # $Id: maindriver,v 1.16 1997/06/27 00:36:21 abrown Exp $
 #
@@ -23,7 +23,7 @@
 #
 # Results obtained from this benchmark may be published only under the
 # name "HBench-OS".
-#
+# 
 
 # Main driver script for HBench-OS
 #
@@ -88,11 +88,11 @@ fi
 if [ X${SCRATCHFILE}X = XX ]; then
     SCRATCHFILE=/tmp/XXX
     touch $SCRATCHFILE || echo Cannot create temporary file $SCRATCHFILE
-fi
+fi 
 if [ X${SCRATCHDIR}X = XX ]; then
     SCRATCHDIR=/tmp
-fi
-
+fi 
+  
 if [ X${PLAINBINDIR}X = XX ]; then
     PLAINBINDIR=${HBENCHROOT}/bin/${OSTYPE}-${ARCH}
 fi
@@ -109,7 +109,7 @@ fi
 RESULTDIRB=${RESULTDIRBASE}/${SYSTEMNAME}
 
 # Step 5: Locate test file, using "default.test" if none specified.
-#         First try it unmodified, then add .test, then check in
+#         First try it unmodified, then add .test, then check in 
 #         ${HBENCHROOT}/conf
 
 if [ X${TESTFILE}X = XX ]; then
@@ -162,7 +162,7 @@ case $COUNTERTYPE in
     0) echo "none";;
     *) echo "unknown";;
 esac
-
+    
 # Step 7: Figure out where results should go, and create that directory.
 EXT=0
 if [ ! -d $RESULTDIRBASE ]; then
@@ -175,7 +175,7 @@ while [ -d $RESULTDIR ]; do
     RESULTDIR=$RESULTDIRB.$EXT
 done
 
-if [ ! -d $RESULTDIR ]; then
+if [ ! -d $RESULTDIR ]; then 
     mkdir $RESULTDIR
 fi
 
@@ -197,7 +197,7 @@ echo "Measuring system clock speed. Please wait..."
 
 MHZPRINT=`${BINDIR}/mhz 2>> ${STDERR}`
 echo $MHZPRINT > $RESULTDIR/mhz
-MHZ=`${BINDIR}/mhz -c 2>> ${STDERR}`
+MHZ=`${BINDIR}/mhz -c 2>> ${STDERR}` 
 echo $MHZ > $RESULTDIR/cycletime
 echo "     Clock speed: $MHZPRINT"
 
@@ -487,7 +487,7 @@ check_size() {
 }
 
 ##
-## A function to parse a line of the test listing file; it extracts the
+## A function to parse a line of the test listing file; it extracts the 
 ## test and parameters, then runs the test via run_test(), above.
 ##
 parse_test() {
@@ -631,7 +631,7 @@ parse_test() {
 		BINDIR=$OLDBINDIR
 		COUNTERTYPE=$OLDCOUNTERTYPE
 	    fi
-	    # Now run the localhost version, overwriting the localhost
+	    # Now run the localhost version, overwriting the localhost 
 	    # result taken above. This lets us re-enable counters for
 	    # localhost, if possible.
 	    OLDREMOTE=$REMOTE
