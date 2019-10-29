@@ -428,7 +428,7 @@ run_remote_test() {
 	    esac
 	else
 	    ${RCP} ${HBENCHROOT}/scripts/config.guess ${machine}:/tmp/get-os
-	    REMOTEOS=`$RSH $machine -n /tmp/get-os | sed 's/^.*-.*-//`
+	    REMOTEOS=`$RSH $machine -n /tmp/get-os | sed 's/^.*-.*-//'`
 	    ${RCP} ${HBENCHROOT}/bin/${REMOTEOS}/$1 ${machine}:/tmp
 
 	    $RSH $machine -n /tmp/$1 0 $3 -s 2>> $STDERR &
