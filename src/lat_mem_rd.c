@@ -43,7 +43,6 @@ char	*id = "$Id: lat_mem_rd.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 #include	<stdio.h>
 #include	<fcntl.h>
 
-int 	step(int k);
 int 	do_loads();
 
 #if !defined(FILENAME_MAX) || FILENAME_MAX < 255
@@ -53,7 +52,7 @@ int 	do_loads();
 char	fname[FILENAME_MAX];	/* output filename */
 
 /*
- * Global parameters to do_loads
+ * Global parameters to do_loads 
  */
 char 	*addr = NULL;
 int	range = 0;
@@ -84,12 +83,12 @@ main(ac, av)
 			av[0], counter_argstring);
 		exit(1);
 	}
-
+	
 	/* parse command line parameters */
 	clk = atof(av[1]);
 	nloops = atoi(av[2]);
 	path = av[3];
-
+	
         len = parse_bytes(av[4]);
 
 	/* Get memory */
@@ -121,7 +120,7 @@ main(ac, av)
 			}
 
 			/* Calculate the number of iterations for 1/2 second */
-			niter = gen_iterations(&do_loads,
+			niter = gen_iterations(&do_loads, 
 					       clock_multiplier*2.0);
 
 			niter = niter/1000; /* round down to 1000's */
@@ -130,7 +129,7 @@ main(ac, av)
 			for (j = nloops; j > 0; j--) {
 				do_loads(niter, &totaltime);
 
-				/*
+				/* 
 				 * We want to get to nanoseconds / load.  We
 				 * don't want to lose any precision in the
 				 * process.  What we have is the milliseconds
@@ -145,7 +144,7 @@ main(ac, av)
 				 * We account for loop overhead below.
 				 */
 #if defined(CYCLE_COUNTER)
-				/*
+				/* 
 				 * Easy case: totaltime is already in cycles,
 				 * so just knock off the right amount.
 				 */
@@ -155,7 +154,7 @@ main(ac, av)
 				 * Since we have no counters, totaltime is in
 				 * microseconds. Assume clock_multiplier is 1.
 				 */
-
+			
 				/* Compute the overhead, in microseconds */
 				tmp = (clk_t)(clk * (float)niter)/(clk_t)1000;
 
@@ -220,7 +219,7 @@ do_loads(num_iter, t)
 #define	TEN	FIVE FIVE
 #define	FIFTY	TEN TEN TEN TEN TEN
 #define	HUNDRED	FIFTY FIFTY
-
+	
 	i = num_iter;
 	p = (char **)addr;
 	start();
@@ -254,7 +253,8 @@ do_loads(num_iter, t)
 }
 
 int
-step(int k)
+step(k)
+	int k;
 {
 	if (k < 1024) {
 		k = k * 2;

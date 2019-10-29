@@ -29,13 +29,13 @@
  *
  * Usage: mhz [-c]
  *
- * The sparc specific code is to get around the double-pumped ALU in the
- * SuperSPARC that can do two adds in one clock. Apparently, only
+ * The sparc specific code is to get around the double-pumped ALU in the 
+ * SuperSPARC that can do two adds in one clock. Apparently, only 
  * SuperSPARC does this.
  * Thanks to John Mashey (mash@sgi.com) for explaining this.
  *
- * The AIX specific code is because the C compiler on rs6000s does not
- * respect the register directive.  "a" below is a stack variable and
+ * The AIX specific code is because the C compiler on rs6000s does not 
+ * respect the register directive.  "a" below is a stack variable and 
  * there are two instructions per increment instead of one.
  * Please note that this may not be correct for other AIX systems.
  *
@@ -69,12 +69,12 @@ main(ac, av)
 	if (ac >= 3) {
 		fprintf(stderr, "Usage: %s [-c]\n", av[0]);
 	}
-
+	
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 	clock_multiplier = 1.0;
 
-	/*
+	/* 
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second.
 	 */
@@ -104,7 +104,7 @@ main(ac, av)
 	totaltime -= overhead;
 
 	mhz = ((double)niter*1000.0) / (double) totaltime;
-
+	
 	if (ac == 2 && !strcmp(av[1], "-c")) {
 		printf("%.4f\n", 1000 / mhz);
 	} else {
@@ -132,12 +132,14 @@ main(ac, av)
  * Worker function #1: does the actual measurement.
  */
 int
-do_ops(int num_iter, clk_t *t)
+do_ops(num_iter, t)
+	int num_iter;
+	clk_t *t;
 {
-	register int a, i;
+	register a, i;
 
 	a = 1024;
-
+	
 	/* Start timing */
 	start();
 
@@ -146,7 +148,7 @@ do_ops(int num_iter, clk_t *t)
 		H H H H H
 		H H H H H
 	}
-	*t = stop((void *)(long)a);
+	*t = stop(a);
 
 	return (0);
 }
@@ -155,12 +157,14 @@ do_ops(int num_iter, clk_t *t)
  * Worker function #2: measures the loop overhead
  */
 int
-do_null(int num_iter, clk_t *t)
+do_null(num_iter, t)
+	int num_iter;
+	clk_t *t;
 {
-	register int a, i;
+	register a, i;
 
 	a = 1024;
-
+	
 	/* Start timing */
 	start();
 
@@ -168,7 +172,7 @@ do_null(int num_iter, clk_t *t)
 	for (i = num_iter; i > 0; i--) {
 		;
 	}
-	*t = stop(NULL);
+	*t = stop();
 
 	return (0);
 }
@@ -180,7 +184,9 @@ do_null(int num_iter, clk_t *t)
 #define OVERHEADAVG_LOOPS	20
 #define OVERHEADAVG_TAILS	0.2
 int
-do_overhead(int num_iter, clk_t *t)
+do_overhead(num_iter, t)
+	int num_iter;
+	clk_t *t;
 {
 	int 	i;
 	clk_t	val;
@@ -191,7 +197,7 @@ do_overhead(int num_iter, clk_t *t)
 		do_null(num_iter, &val);
 		centeravg_add(val);
 	}
-
+	
 	centeravg_done(t);
 
 	return (0);

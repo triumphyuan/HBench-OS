@@ -36,9 +36,6 @@
  */
 char	*id = "$Id: memsize.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 
-void timeit(char *where, int size);
-void touch(char *p, char *end, int range);
-
 #include "common.c"
 
 #define	CHK(x)	if ((x) == -1) { perror("x"); exit(1); }
@@ -56,7 +53,7 @@ main(ac, av)
 	size_t	max;
 
 	if (parse_counter_args(&ac, &av) || ac > 2) {
-		fprintf(stderr, "usage: %s%s [maxmemsizeinMB]\n",
+		fprintf(stderr, "usage: %s%s [maxmemsizeinMB]\n", 
 			av[0], counter_argstring);
 		exit(1);
 	}
@@ -94,8 +91,8 @@ main(ac, av)
 	exit(0);
 }
 
-void
-timeit(char *where, int size)
+timeit(where, size)
+	char	*where;
 {
 	clk_t	lat = (clk_t) 0;
 	int	n;
@@ -112,7 +109,7 @@ timeit(char *where, int size)
 		touch(where, end, range);
 		start();
 		touch(where, end, range);
-		lat = stop(NULL);
+		lat = stop();
 		n = range / 4096;
 		if ((lat / n) > (clk_t)((float)TOO_LONG / clock_multiplier)) {
 			fprintf(stderr, "\n");
@@ -125,7 +122,6 @@ timeit(char *where, int size)
 	printf("%d\n", (size>>20));
 }
 
-void
 touch(char *p, char *end, int range)
 {
 	char	*tmp = p;

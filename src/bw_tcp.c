@@ -35,7 +35,7 @@
  * IMPORTANT NOTE: If using remote (non-localhost) measurement along with
  *                 cycle counters, the two machines MUST HAVE THE SAME CLOCK
  *		   RATE for the measurement to be valid. If this is impossible,
- *		   then run the test manually and feed the server's clock
+ *		   then run the test manually and feed the server's clock 
  *     		   multiplier to both the server and client. Note that the
  * 		   driver script WILL NOT do this automatically.
  *
@@ -46,32 +46,27 @@
  */
 char	*id = "$Id: bw_tcp.c,v 1.7 1997/06/27 00:33:58 abrown Exp $\n";
 
-#include <sys/wait.h>
-
 #include "common.c"
 #include "lib_tcp.c"
 
-
-/*
+/* 
  * General philosophy for getting reproducible numbers: we transfer
  * data in multiples of the user-supplied buffer size until the data
  * transfer takes one second or more. This can all be done nicely on
  * the client end, except that we have to tell the server the buffer
  * size when it starts up. So you need to kill and restart the server
- * each time you feed in a different buffer-size parameter.
+ * each time you feed in a different buffer-size parameter.  
  */
 
 #define XFERUNIT	(1024*1024) 	/* Amount to transfer per iteration */
 
 /* The worker function */
 int 	do_client(int num_iter, clk_t *time);
-void    server_main(void);
-void    absorb(int control, int data);
 
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function
+ * lists and the gen_iterations function 
  */
 unsigned int 	bufsize;	/* size of transfer requests to make */
 char 		*rhostname;	/* hostname of remote host */
@@ -106,8 +101,8 @@ main(ac, av)
 		}
 		exit(0);
 	}
-
-	/* Starting client */
+	
+	/* Starting client */	
 	if (av[3][0] == '-') {
 		bufsize = 0;	/* signal client to kill server */
 		rhostname = &av[3][1];
@@ -121,7 +116,7 @@ main(ac, av)
 	init_timing();
 
 #ifndef COLD_CACHE
-	/*
+	/* 
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -130,7 +125,7 @@ main(ac, av)
 	 */
 	if (niter == 0) {
 		niter = gen_iterations(&do_client, clock_multiplier);
-
+		
 		/* double time to 2 sec to smooth over network burstiness */
 		niter *= 2;
 
@@ -152,11 +147,11 @@ main(ac, av)
 	do_client(niter, &totaltime);	/* get TCP bandwidth */
 
 	output_bandwidth(niter * XFERUNIT, totaltime);
-
+	
 	return (0);
 }
 
-/*
+/* 
  * This function does all the work. It transfers XFERUNIT to the
  * server num_iter times, timing the entire operation.
  *
@@ -167,7 +162,7 @@ do_client(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters
+	 * 	Global parameters 
 	 *
 	 * unsigned int bufsize;
 	 * char		*rhostname;
@@ -267,8 +262,7 @@ child(dummy)
 	signal(SIGCHLD, child);
 }
 
-void
-server_main(void)
+server_main()
 {
 	int	data, control, newdata, newcontrol;
 
@@ -301,8 +295,7 @@ server_main(void)
  * Read that many bytes on the data socket.
  * Write the performance results on the control socket.
  */
-void
-absorb(int control, int data)
+absorb(control, data)
 {
 	int	nread, save, nbytes;
 	char	*buf = valloc(bufsize);
@@ -331,7 +324,7 @@ absorb(int control, int data)
 	start();
 	while (nbytes > 0 && (nread = read(data, buf, bufsize)) > 0)
 		nbytes -= nread;
-	timing = stop(NULL);
+	timing = stop();
 
 	(void)close(2);		/* stderr - timing stats go to stderr */
 	(void)dup(control);	/* stderr == control now */
@@ -339,10 +332,11 @@ absorb(int control, int data)
 	fprintf(stderr, CLKTFMT"\n\000", timing);
 #ifdef EVENT_COUNTERS
 	if (eventcounter_active[0])
-		fprintf(stderr,"@1@"EVENTCOUNTERTFMT"\n\000",
+		fprintf(stderr,"@1@"EVENTCOUNTERTFMT"\n\000", 
 			get_eventcounter(0));
 	if (eventcounter_active[1])
-		fprintf(stderr,"@2@"EVENTCOUNTERTFMT"\n\000",
+		fprintf(stderr,"@2@"EVENTCOUNTERTFMT"\n\000", 
 			get_eventcounter(1));
-#endif
+#endif	
 }
+

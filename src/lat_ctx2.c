@@ -25,10 +25,10 @@
  */
 
 /*
- * lat_ctx2.c - measures impure context switch latency, with cache conflict
+ * lat_ctx2.c - measures impure context switch latency, with cache conflict 
  *              resolution overhead included
  *
- * usage: lat_ctx niter footprint #procs
+ * usage: lat_ctx niter footprint #procs 
  *
  * Based on:
  *	$lmbenchId: lat_ctx.c,v 1.3 1995/10/26 04:03:09 lm Exp $
@@ -39,7 +39,6 @@ char	*id = "$Id: lat_ctx2.c,v 1.2 1997/06/27 00:33:58 abrown Exp $\n";
 
 #include "common.c"
 #include <sys/mman.h>
-#include <sys/wait.h>
 #include <fcntl.h>
 
 #define MAX_PROCS		128
@@ -57,7 +56,7 @@ void	killem(), child();
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function
+ * lists and the gen_iterations function 
  */
 int	nprocs;			/* number of processes */
 int	sprocs;			/* size of each process */
@@ -78,7 +77,7 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 4) {
-		fprintf(stderr,
+		fprintf(stderr, 
 			"usage: %s%s iterations footprint nprocs\n",
 			av[0], counter_argstring);
 		exit(1);
@@ -88,7 +87,7 @@ main(ac, av)
 	niter = atoi(av[1]);
 	sprocs = parse_bytes(av[2]);
 	nprocs = atoi(av[3]);
-
+	
 	if (nprocs > MAX_PROCS) {
 		fprintf(stderr, "%s: maximum number of processes (%d) "
 			"exceeded\n",MAX_PROCS);
@@ -108,7 +107,7 @@ main(ac, av)
 			exit(1);
 		}
 	}
-
+	
 #ifndef COLD_CACHE
 	if (niter == 0) {
 		/*
@@ -116,7 +115,7 @@ main(ac, av)
 		 * switching are necessary to make up one second.
 		 */
 		niter = gen_iterations(&do_ctxsw, clock_multiplier);
-
+		
 		/* Now we output the result */
 		printf("%d\n", niter);
 		return (0);
@@ -128,7 +127,7 @@ main(ac, av)
 #ifdef NOOVERHEAD		/* for internal use only! */
 	overhead = 0;
 #else
-	/*
+	/* 
 	 * We must first measure the overhead of passing a token around
 	 * an array in a single process ("pipe overhead").
 	 *
@@ -137,7 +136,7 @@ main(ac, av)
 	 * statistically-more-appropriate measure.
 	 */
 	tmp = gen_iterations(&do_overhead1, clock_multiplier);
-
+	
 	/* Use only 1/2 second to make running time reasonable */
 	tmp >>= 1;
 	do_overhead2(tmp, &overhead);
@@ -167,7 +166,7 @@ main(ac, av)
  *
  * The time returned is the time for num_iter iterations of passing the
  * token through all nprocs pipes, summing nprocs times. So the time for
- * a single pipe/sum (i.e. overhead for 1 context switch) is
+ * a single pipe/sum (i.e. overhead for 1 context switch) is 
  * 	*t/(num_iter*nprocs)
  */
 int
@@ -180,7 +179,7 @@ do_overhead1(num_iter, t)
 	char 	*data, *where;
 
 	/*
-	 * Get the data array
+	 * Get the data array 
 	 */
 	if (sprocs != 0) {
 		where = data = (char *) pbuffer;
@@ -208,7 +207,7 @@ do_overhead1(num_iter, t)
 		}
 	}
 	write(p[k = 0][1], &msg, sizeof(msg)); /* start the token */
-
+	
 	/*
 	 * Now do the loop
 	 */
@@ -230,7 +229,7 @@ do_overhead1(num_iter, t)
 	*t = stop(sum);
 
 	/*
-	 * Get rid of resources: pipes and memory
+	 * Get rid of resources: pipes and memory	
 	 */
 	for (i = n-1; i >= 0; i--) {
 		close(p[i][0]);
@@ -258,7 +257,7 @@ do_overhead2(num_iter, t)
 		do_overhead1(num_iter, &val);
 		centeravg_add(val/(nprocs*num_iter)); /* get 1-sw overhead */
 	}
-
+	
 	centeravg_done(t);
 
 	return (0);
@@ -276,7 +275,7 @@ do_ctxsw(num_iter, t)
 {
 	int 	p[MAX_PROCS][2];
 	int 	msg = 0, i, sum;
-
+	
 	locdata = pbuffer;
 
 	/*
@@ -296,11 +295,11 @@ do_ctxsw(num_iter, t)
 	signal(SIGTERM, SIG_IGN);
      	for (i = 1; i < nprocs; ++i) {
 		switch (pids[i] = fork()) {
-		    case -1:
+		    case -1: 
 			perror("fork");
 			killem(nprocs);
 			exit(1);
-
+			
 		    case 0:	/* child */
 			child(p, i-1, i);
 			/* NOTREACHED */
@@ -334,7 +333,7 @@ do_ctxsw(num_iter, t)
 
 	    	write(p[0][1], &msg, sizeof(msg));
 	}
-	*t = stop(NULL);
+	*t = stop();
 
 	/*
 	 * Close the pipes and kill the children.
@@ -409,3 +408,4 @@ sumit(data)
 	}
 	return (sum);
 }
+

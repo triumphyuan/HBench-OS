@@ -36,8 +36,6 @@
  */
 char	*id = "$Id: bw_pipe.c,v 1.4 1997/06/27 00:33:58 abrown Exp $\n";
 
-#include <sys/wait.h>
-
 #include "common.c"
 
 extern	void	exit();		/* for lint on SunOS 4.x */
@@ -49,7 +47,7 @@ int 	do_pipexfer(int num_iter, clk_t *time);
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function
+ * lists and the gen_iterations function 
  */
 unsigned int 	bufsize;	/* the size of the request buffer */
 
@@ -73,16 +71,16 @@ main(ac, av)
 			av[0], counter_argstring);
 		exit(1);
 	}
-
+	
 	/* parse command line parameters */
 	niter = atoi(av[1]);
 	bufsize = parse_bytes(av[2]);
-
+	
 	/* initialize timing module (calculates timing overhead, etc) */
 	init_timing();
 
 #ifndef COLD_CACHE
-	/*
+	/* 
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -105,7 +103,7 @@ main(ac, av)
 	do_pipexfer(niter, &totaltime);	/* get pipe bandwidth */
 
 	output_bandwidth(niter * XFERUNIT, totaltime);
-
+	
 	return (0);
 }
 
@@ -121,7 +119,7 @@ do_pipexfer(num_iter, t)
 	clk_t *t;
 {
 	/*
-	 * 	Global parameters
+	 * 	Global parameters 
 	 *
 	 * unsigned int bufsize;
 	 */
@@ -137,14 +135,14 @@ do_pipexfer(num_iter, t)
 
 	/* Amount to transfer */
 	todo = XFERUNIT * num_iter;
-
+	
 	/* Allocate buffer */
 	buf = (char *) malloc(bufsize);
 	if (buf == NULL) {
 		perror("malloc");
 		exit(1);
 		/* NOTREACHED */
-	}
+	}	
 
 	/* Spawn off a writer, then time the read */
 	switch (fork()) {
@@ -154,26 +152,27 @@ do_pipexfer(num_iter, t)
 			done += n;
 		exit(0);
 		/*NOTREACHED*/
-
+	    	
 	case -1:
 		perror("fork");
 		exit(1);
 		/*NOTREACHED*/
-
+		
 	default:		/* reader */
 		/* wait for writer */
 		sleep(1);
-
+		
 		start();	/* start timing */
 		while ((done < todo) &&
 		       ((n = read(pipes[0], buf, bufsize)) > 0))
 			done += n;
-		*t = stop(NULL);	/* stop timing */
+		*t = stop();	/* stop timing */
 
 		wait(&termstat); /* wait for writer to exit */
 	}
-
+	
 	free(buf);		/* release memory */
 
 	return (0);
 }
+

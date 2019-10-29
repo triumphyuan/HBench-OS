@@ -43,9 +43,6 @@ char	*id = "$Id: lat_fs.c,v 1.8 1997/06/27 00:33:58 abrown Exp $\n";
 #include "common.c"
 #include <stdlib.h>
 #include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 /* Worker function */
 int do_create();		/* wrapper that does timing */
@@ -58,7 +55,7 @@ void release_names();		/* free the temp. filenames */
 /*
  * Global variables: these are the parameters required by the worker routine.
  * We make them global to avoid portability problems with variable argument
- * lists and the gen_iterations function
+ * lists and the gen_iterations function 
  */
 char 	*tmpdir;		/* name of scratch directory */
 int	filesize;		/* size of files to create or delete */
@@ -84,7 +81,7 @@ main(ac, av)
 
 	/* Check command-line arguments */
 	if (parse_counter_args(&ac, &av) || ac != 5) {
-		fprintf(stderr, "usage: %s%s iterations [create|delforw|delrev|delrand] filesize scratchdir\n",
+		fprintf(stderr, "usage: %s%s iterations [create|delforw|delrev|delrand] filesize scratchdir\n", 
 			av[0], counter_argstring);
 		exit(1);
 	}
@@ -108,7 +105,7 @@ main(ac, av)
 	}
 	filesize = parse_bytes(av[3]);
 	tmpdir = av[4];
-
+	
 	/* Switch to temporary directory */
 	if (tmpdir)
 	    chdir(tmpdir);
@@ -128,7 +125,7 @@ main(ac, av)
 	srand(tv.tv_usec);
 
 #ifndef COLD_CACHE
-	/*
+	/* 
 	 * Generate the appropriate number of iterations so the test takes
 	 * at least one second. For efficiency, we are passed in the expected
 	 * number of iterations, and we return it via the process error code.
@@ -152,7 +149,7 @@ main(ac, av)
 	(*workerfunc)(niter, &totaltime);	/* get cached reread */
 
 	output_latency(totaltime, niter);
-
+	
 	/* Clean up state */
 	free(databuf);
 
@@ -174,8 +171,8 @@ do_create(num_iter, t)
 	 */
 	int ret;
 
-	/*
-	 * Generate the file names to use
+	/* 
+	 * Generate the file names to use 
 	 */
 	filenames = generate_names(num_iter);
 
@@ -184,7 +181,7 @@ do_create(num_iter, t)
 	 */
 	start();
 	ret = real_create(num_iter);
-	*t = stop(NULL);
+	*t = stop();
 
 	/*
 	 * Now delete all the files we just created.
@@ -216,8 +213,8 @@ do_delete(num_iter, t)
 	register int i;
 	register char *tmp;
 
-	/*
-	 * Generate the file names to use
+	/* 
+	 * Generate the file names to use 
 	 */
 	filenames = generate_names(num_iter);
 
@@ -253,7 +250,7 @@ do_delete(num_iter, t)
 	 */
 	start();
 	ret = real_delete(num_iter);
-	*t = stop(NULL);
+	*t = stop();
 
 	/*
 	 * Clean up filename state
@@ -301,7 +298,7 @@ real_delete(numfiles)
 }
 
 /*
- * generate_names: create numfiles temporary filenames for use in
+ * generate_names: create numfiles temporary filenames for use in 
  * the creation stage. The names are of the form "Hxxxxxxx" where xxxxxxx
  * is a hexadecimal number representing the file number. We thus allow
  * up to 2^28 iterations.
